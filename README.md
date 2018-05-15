@@ -1,6 +1,3 @@
-// Copyright (C) 2018, Pulse Secure, LLC. 
-// Licensed under the terms of the MPL 2.0. See LICENSE file for details.
-
 # Terraform Provider for Pulse Secure Virtual Traffic Manager
 
 ## Introduction
