@@ -64,6 +64,10 @@ func resourceRate() *schema.Resource {
 
 func resourceRateRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetRate(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -82,6 +86,9 @@ func resourceRateRead(d *schema.ResourceData, tm interface{}) error {
 
 func resourceRateExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetRate(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

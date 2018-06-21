@@ -223,6 +223,10 @@ func resourceAction() *schema.Resource {
 
 func resourceActionRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetAction(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -278,6 +282,9 @@ func resourceActionRead(d *schema.ResourceData, tm interface{}) error {
 
 func resourceActionExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetAction(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

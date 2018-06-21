@@ -35,6 +35,10 @@ func dataSourceServicediscovery() *schema.Resource {
 
 func dataSourceServicediscoveryRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetServicediscovery(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

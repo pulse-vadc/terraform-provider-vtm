@@ -77,6 +77,10 @@ func resourceAptimizerProfile() *schema.Resource {
 
 func resourceAptimizerProfileRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetAptimizerProfile(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -96,6 +100,9 @@ func resourceAptimizerProfileRead(d *schema.ResourceData, tm interface{}) error 
 
 func resourceAptimizerProfileExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetAptimizerProfile(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

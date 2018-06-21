@@ -44,6 +44,10 @@ func resourceMonitorScript() *schema.Resource {
 
 func resourceMonitorScriptRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetMonitorScript(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -59,6 +63,9 @@ func resourceMonitorScriptRead(d *schema.ResourceData, tm interface{}) error {
 
 func resourceMonitorScriptExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetMonitorScript(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

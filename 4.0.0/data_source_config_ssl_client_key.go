@@ -53,6 +53,10 @@ func dataSourceSslClientKey() *schema.Resource {
 
 func dataSourceSslClientKeyRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetSslClientKey(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

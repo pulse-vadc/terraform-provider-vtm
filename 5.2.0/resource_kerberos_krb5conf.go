@@ -44,6 +44,10 @@ func resourceKerberosKrb5Conf() *schema.Resource {
 
 func resourceKerberosKrb5ConfRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetKerberosKrb5Conf(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -59,6 +63,9 @@ func resourceKerberosKrb5ConfRead(d *schema.ResourceData, tm interface{}) error 
 
 func resourceKerberosKrb5ConfExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetKerberosKrb5Conf(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

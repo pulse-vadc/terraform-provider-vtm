@@ -782,6 +782,10 @@ func resourcePool() *schema.Resource {
 
 func resourcePoolRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetPool(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -897,6 +901,9 @@ func resourcePoolRead(d *schema.ResourceData, tm interface{}) error {
 
 func resourcePoolExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetPool(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

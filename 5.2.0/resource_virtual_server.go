@@ -1737,6 +1737,10 @@ func resourceVirtualServer() *schema.Resource {
 
 func resourceVirtualServerRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetVirtualServer(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -1988,6 +1992,9 @@ func resourceVirtualServerRead(d *schema.ResourceData, tm interface{}) error {
 
 func resourceVirtualServerExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetVirtualServer(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
