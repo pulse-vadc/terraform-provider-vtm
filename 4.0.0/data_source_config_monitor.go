@@ -274,6 +274,10 @@ func dataSourceMonitor() *schema.Resource {
 
 func dataSourceMonitorRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetMonitor(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

@@ -44,6 +44,10 @@ func resourceExtraFile() *schema.Resource {
 
 func resourceExtraFileRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetExtraFile(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -59,6 +63,9 @@ func resourceExtraFileRead(d *schema.ResourceData, tm interface{}) error {
 
 func resourceExtraFileExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetExtraFile(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

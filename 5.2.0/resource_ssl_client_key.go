@@ -62,6 +62,10 @@ func resourceSslClientKey() *schema.Resource {
 
 func resourceSslClientKeyRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetSslClientKey(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -81,6 +85,9 @@ func resourceSslClientKeyRead(d *schema.ResourceData, tm interface{}) error {
 
 func resourceSslClientKeyExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetSslClientKey(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

@@ -251,6 +251,10 @@ func resourceGlbService() *schema.Resource {
 
 func resourceGlbServiceRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetGlbService(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -319,6 +323,9 @@ func resourceGlbServiceRead(d *schema.ResourceData, tm interface{}) error {
 
 func resourceGlbServiceExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetGlbService(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

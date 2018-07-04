@@ -62,6 +62,10 @@ func dataSourceSamlTrustedidp() *schema.Resource {
 
 func dataSourceSamlTrustedidpRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetSamlTrustedidp(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

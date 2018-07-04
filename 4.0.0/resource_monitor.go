@@ -282,6 +282,10 @@ func resourceMonitor() *schema.Resource {
 
 func resourceMonitorRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetMonitor(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -343,6 +347,9 @@ func resourceMonitorRead(d *schema.ResourceData, tm interface{}) error {
 
 func resourceMonitorExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetMonitor(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

@@ -44,6 +44,10 @@ func resourceServicediscovery() *schema.Resource {
 
 func resourceServicediscoveryRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetServicediscovery(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -59,6 +63,9 @@ func resourceServicediscoveryRead(d *schema.ResourceData, tm interface{}) error 
 
 func resourceServicediscoveryExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetServicediscovery(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

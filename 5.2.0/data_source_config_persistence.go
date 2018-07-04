@@ -96,6 +96,10 @@ func dataSourcePersistence() *schema.Resource {
 
 func dataSourcePersistenceRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetPersistence(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {

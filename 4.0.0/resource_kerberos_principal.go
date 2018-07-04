@@ -73,6 +73,10 @@ func resourceKerberosPrincipal() *schema.Resource {
 
 func resourceKerberosPrincipalRead(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+		d.Set("name", objectName)
+	}
 	object, err := tm.(*vtm.VirtualTrafficManager).GetKerberosPrincipal(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
@@ -93,6 +97,9 @@ func resourceKerberosPrincipalRead(d *schema.ResourceData, tm interface{}) error
 
 func resourceKerberosPrincipalExists(d *schema.ResourceData, tm interface{}) (bool, error) {
 	objectName := d.Get("name").(string)
+	if objectName == "" {
+		objectName = d.Id()
+	}
 	_, err := tm.(*vtm.VirtualTrafficManager).GetKerberosPrincipal(objectName)
 	if err != nil {
 		if err.ErrorId == "resource.not_found" {
