@@ -240,9 +240,9 @@ func configureProvider(d *schema.ResourceData) (interface{}, error) {
 	password := d.Get("password").(string)
 	verifySslCert := d.Get("verify_ssl_cert").(bool)
 
-	tm, contactable, contactErr := vtm.NewVirtualTrafficManager(baseUrl, username, password, verifySslCert)
+	tm, contactable, contactErr := vtm.NewVirtualTrafficManager(baseUrl, username, password, verifySslCert, true)
 	if contactable != true {
-		return nil, fmt.Errorf("Failed to connect to Virtual Traffic Manager at '%v': %v", baseUrl, contactErr)
+		return nil, fmt.Errorf("Failed to connect to Virtual Traffic Manager at '%v': %v", baseUrl, contactErr.ErrorText)
 	}
 	return tm, nil
 }

@@ -23,41 +23,45 @@ func resourceAptimizerScope() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceAptimizerScopeSchema(),
+	}
+}
 
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
+func getResourceAptimizerScopeSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-			// If the hostnames for this scope are aliases of each other, the
-			//  canonical hostname will be used for requests to the server.
-			"canonical_hostname": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		"name": &schema.Schema{
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.NoZeroValues,
+		},
 
-			// The hostnames to limit acceleration to.
-			"hostnames": &schema.Schema{
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
+		// If the hostnames for this scope are aliases of each other, the
+		//  canonical hostname will be used for requests to the server.
+		"canonical_hostname": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// The root path of the application defined by this application
-			//  scope.
-			"root": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "/",
-			},
+		// The hostnames to limit acceleration to.
+		"hostnames": &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			Elem:     &schema.Schema{Type: schema.TypeString},
+		},
+
+		// The root path of the application defined by this application
+		//  scope.
+		"root": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+			Default:  "/",
 		},
 	}
 }
 
-func resourceAptimizerScopeRead(d *schema.ResourceData, tm interface{}) error {
+func resourceAptimizerScopeRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	if objectName == "" {
 		objectName = d.Id()
@@ -71,10 +75,22 @@ func resourceAptimizerScopeRead(d *schema.ResourceData, tm interface{}) error {
 		}
 		return fmt.Errorf("Failed to read vtm_scope '%v': %v", objectName, err.ErrorText)
 	}
-	d.Set("canonical_hostname", string(*object.Basic.CanonicalHostname))
-	d.Set("hostnames", []string(*object.Basic.Hostnames))
-	d.Set("root", string(*object.Basic.Root))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "canonical_hostname"
+	d.Set("canonical_hostname", string(*object.Basic.CanonicalHostname))
+	lastAssignedField = "hostnames"
+	d.Set("hostnames", []string(*object.Basic.Hostnames))
+	lastAssignedField = "root"
+	d.Set("root", string(*object.Basic.Root))
 	d.SetId(objectName)
 	return nil
 }
@@ -97,17 +113,12 @@ func resourceAptimizerScopeExists(d *schema.ResourceData, tm interface{}) (bool,
 func resourceAptimizerScopeCreate(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
 	object := tm.(*vtm.VirtualTrafficManager).NewAptimizerScope(objectName)
-	setString(&object.Basic.CanonicalHostname, d, "canonical_hostname")
-
-	if _, ok := d.GetOk("hostnames"); ok {
-		setStringList(&object.Basic.Hostnames, d, "hostnames")
-	} else {
-		object.Basic.Hostnames = &[]string{}
-		d.Set("hostnames", []string(*object.Basic.Hostnames))
+	resourceAptimizerScopeObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error creating vtm_scope '%s': %s %s", objectName, applyErr.ErrorText, info)
 	}
-	setString(&object.Basic.Root, d, "root")
-
-	object.Apply()
 	d.SetId(objectName)
 	return nil
 }
@@ -118,19 +129,26 @@ func resourceAptimizerScopeUpdate(d *schema.ResourceData, tm interface{}) error 
 	if err != nil {
 		return fmt.Errorf("Failed to update vtm_scope '%v': %v", objectName, err)
 	}
+	resourceAptimizerScopeObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error updating vtm_scope '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
+	d.SetId(objectName)
+	return nil
+}
+
+func resourceAptimizerScopeObjectFieldAssignments(d *schema.ResourceData, object *vtm.AptimizerScope) {
 	setString(&object.Basic.CanonicalHostname, d, "canonical_hostname")
 
 	if _, ok := d.GetOk("hostnames"); ok {
-		setStringList(&object.Basic.Hostnames, d, "hostnames")
+		setStringSet(&object.Basic.Hostnames, d, "hostnames")
 	} else {
 		object.Basic.Hostnames = &[]string{}
 		d.Set("hostnames", []string(*object.Basic.Hostnames))
 	}
 	setString(&object.Basic.Root, d, "root")
-
-	object.Apply()
-	d.SetId(objectName)
-	return nil
 }
 
 func resourceAptimizerScopeDelete(d *schema.ResourceData, tm interface{}) error {

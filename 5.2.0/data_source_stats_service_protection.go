@@ -91,7 +91,7 @@ func dataSourceServiceProtectionStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceServiceProtectionStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceServiceProtectionStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetServiceProtectionStatistics(objectName)
 	if err != nil {
@@ -101,14 +101,41 @@ func dataSourceServiceProtectionStatisticsRead(d *schema.ResourceData, tm interf
 		}
 		return fmt.Errorf("Failed to read vtm_service_protection '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "last_refusal_time"
 	d.Set("last_refusal_time", int(*object.Statistics.LastRefusalTime))
+
+	lastAssignedField = "refusal_binary"
 	d.Set("refusal_binary", int(*object.Statistics.RefusalBinary))
+
+	lastAssignedField = "refusal_conc10_ip"
 	d.Set("refusal_conc10_ip", int(*object.Statistics.RefusalConc10Ip))
+
+	lastAssignedField = "refusal_conc1_ip"
 	d.Set("refusal_conc1_ip", int(*object.Statistics.RefusalConc1Ip))
+
+	lastAssignedField = "refusal_conn_rate"
 	d.Set("refusal_conn_rate", int(*object.Statistics.RefusalConnRate))
+
+	lastAssignedField = "refusal_ip"
 	d.Set("refusal_ip", int(*object.Statistics.RefusalIp))
+
+	lastAssignedField = "refusal_rfc2396"
 	d.Set("refusal_rfc2396", int(*object.Statistics.RefusalRfc2396))
+
+	lastAssignedField = "refusal_size"
 	d.Set("refusal_size", int(*object.Statistics.RefusalSize))
+
+	lastAssignedField = "total_refusal"
 	d.Set("total_refusal", int(*object.Statistics.TotalRefusal))
 	d.SetId(objectName)
 	return nil

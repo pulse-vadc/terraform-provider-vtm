@@ -500,88 +500,253 @@ func dataSourceGlobalsStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceGlobalsStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceGlobalsStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	object, err := tm.(*vtm.VirtualTrafficManager).GetGlobalsStatistics()
 	if err != nil {
 		return fmt.Errorf("Failed to read vtm_globals: %v", err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "analytics_transactions_dropped"
 	d.Set("analytics_transactions_dropped", int(*object.Statistics.AnalyticsTransactionsDropped))
+
+	lastAssignedField = "analytics_transactions_exported"
 	d.Set("analytics_transactions_exported", int(*object.Statistics.AnalyticsTransactionsExported))
+
+	lastAssignedField = "analytics_transactions_memory_usage"
 	d.Set("analytics_transactions_memory_usage", int(*object.Statistics.AnalyticsTransactionsMemoryUsage))
+
+	lastAssignedField = "data_entries"
 	d.Set("data_entries", int(*object.Statistics.DataEntries))
+
+	lastAssignedField = "data_memory_usage"
 	d.Set("data_memory_usage", int(*object.Statistics.DataMemoryUsage))
+
+	lastAssignedField = "events_seen"
 	d.Set("events_seen", int(*object.Statistics.EventsSeen))
+
+	lastAssignedField = "hourly_peak_bytes_in_per_second"
 	d.Set("hourly_peak_bytes_in_per_second", int(*object.Statistics.HourlyPeakBytesInPerSecond))
+
+	lastAssignedField = "hourly_peak_bytes_out_per_second"
 	d.Set("hourly_peak_bytes_out_per_second", int(*object.Statistics.HourlyPeakBytesOutPerSecond))
+
+	lastAssignedField = "hourly_peak_requests_per_second"
 	d.Set("hourly_peak_requests_per_second", int(*object.Statistics.HourlyPeakRequestsPerSecond))
+
+	lastAssignedField = "hourly_peak_ssl_connections_per_second"
 	d.Set("hourly_peak_ssl_connections_per_second", int(*object.Statistics.HourlyPeakSslConnectionsPerSecond))
+
+	lastAssignedField = "num_idle_connections"
 	d.Set("num_idle_connections", int(*object.Statistics.NumIdleConnections))
+
+	lastAssignedField = "number_child_processes"
 	d.Set("number_child_processes", int(*object.Statistics.NumberChildProcesses))
+
+	lastAssignedField = "number_dnsa_cache_hits"
 	d.Set("number_dnsa_cache_hits", int(*object.Statistics.NumberDnsaCacheHits))
+
+	lastAssignedField = "number_dnsa_requests"
 	d.Set("number_dnsa_requests", int(*object.Statistics.NumberDnsaRequests))
+
+	lastAssignedField = "number_dnsptr_cache_hits"
 	d.Set("number_dnsptr_cache_hits", int(*object.Statistics.NumberDnsptrCacheHits))
+
+	lastAssignedField = "number_dnsptr_requests"
 	d.Set("number_dnsptr_requests", int(*object.Statistics.NumberDnsptrRequests))
+
+	lastAssignedField = "number_snmp_bad_requests"
 	d.Set("number_snmp_bad_requests", int(*object.Statistics.NumberSnmpBadRequests))
+
+	lastAssignedField = "number_snmp_get_bulk_requests"
 	d.Set("number_snmp_get_bulk_requests", int(*object.Statistics.NumberSnmpGetBulkRequests))
+
+	lastAssignedField = "number_snmp_get_next_requests"
 	d.Set("number_snmp_get_next_requests", int(*object.Statistics.NumberSnmpGetNextRequests))
+
+	lastAssignedField = "number_snmp_get_requests"
 	d.Set("number_snmp_get_requests", int(*object.Statistics.NumberSnmpGetRequests))
+
+	lastAssignedField = "number_snmp_unauthorised_requests"
 	d.Set("number_snmp_unauthorised_requests", int(*object.Statistics.NumberSnmpUnauthorisedRequests))
+
+	lastAssignedField = "ssl_cipher_3des_decrypts"
 	d.Set("ssl_cipher_3des_decrypts", int(*object.Statistics.SslCipher3DesDecrypts))
+
+	lastAssignedField = "ssl_cipher_3des_encrypts"
 	d.Set("ssl_cipher_3des_encrypts", int(*object.Statistics.SslCipher3DesEncrypts))
+
+	lastAssignedField = "ssl_cipher_aes_decrypts"
 	d.Set("ssl_cipher_aes_decrypts", int(*object.Statistics.SslCipherAesDecrypts))
+
+	lastAssignedField = "ssl_cipher_aes_encrypts"
 	d.Set("ssl_cipher_aes_encrypts", int(*object.Statistics.SslCipherAesEncrypts))
+
+	lastAssignedField = "ssl_cipher_aes_gcm_decrypts"
 	d.Set("ssl_cipher_aes_gcm_decrypts", int(*object.Statistics.SslCipherAesGcmDecrypts))
+
+	lastAssignedField = "ssl_cipher_aes_gcm_encrypts"
 	d.Set("ssl_cipher_aes_gcm_encrypts", int(*object.Statistics.SslCipherAesGcmEncrypts))
+
+	lastAssignedField = "ssl_cipher_decrypts"
 	d.Set("ssl_cipher_decrypts", int(*object.Statistics.SslCipherDecrypts))
+
+	lastAssignedField = "ssl_cipher_des_decrypts"
 	d.Set("ssl_cipher_des_decrypts", int(*object.Statistics.SslCipherDesDecrypts))
+
+	lastAssignedField = "ssl_cipher_des_encrypts"
 	d.Set("ssl_cipher_des_encrypts", int(*object.Statistics.SslCipherDesEncrypts))
+
+	lastAssignedField = "ssl_cipher_dh_agreements"
 	d.Set("ssl_cipher_dh_agreements", int(*object.Statistics.SslCipherDhAgreements))
+
+	lastAssignedField = "ssl_cipher_dh_generates"
 	d.Set("ssl_cipher_dh_generates", int(*object.Statistics.SslCipherDhGenerates))
+
+	lastAssignedField = "ssl_cipher_dsa_signs"
 	d.Set("ssl_cipher_dsa_signs", int(*object.Statistics.SslCipherDsaSigns))
+
+	lastAssignedField = "ssl_cipher_dsa_verifies"
 	d.Set("ssl_cipher_dsa_verifies", int(*object.Statistics.SslCipherDsaVerifies))
+
+	lastAssignedField = "ssl_cipher_ecdh_agreements"
 	d.Set("ssl_cipher_ecdh_agreements", int(*object.Statistics.SslCipherEcdhAgreements))
+
+	lastAssignedField = "ssl_cipher_ecdh_generates"
 	d.Set("ssl_cipher_ecdh_generates", int(*object.Statistics.SslCipherEcdhGenerates))
+
+	lastAssignedField = "ssl_cipher_ecdsa_signs"
 	d.Set("ssl_cipher_ecdsa_signs", int(*object.Statistics.SslCipherEcdsaSigns))
+
+	lastAssignedField = "ssl_cipher_ecdsa_verifies"
 	d.Set("ssl_cipher_ecdsa_verifies", int(*object.Statistics.SslCipherEcdsaVerifies))
+
+	lastAssignedField = "ssl_cipher_encrypts"
 	d.Set("ssl_cipher_encrypts", int(*object.Statistics.SslCipherEncrypts))
+
+	lastAssignedField = "ssl_cipher_rc4_decrypts"
 	d.Set("ssl_cipher_rc4_decrypts", int(*object.Statistics.SslCipherRc4Decrypts))
+
+	lastAssignedField = "ssl_cipher_rc4_encrypts"
 	d.Set("ssl_cipher_rc4_encrypts", int(*object.Statistics.SslCipherRc4Encrypts))
+
+	lastAssignedField = "ssl_cipher_rsa_decrypts"
 	d.Set("ssl_cipher_rsa_decrypts", int(*object.Statistics.SslCipherRsaDecrypts))
+
+	lastAssignedField = "ssl_cipher_rsa_decrypts_external"
 	d.Set("ssl_cipher_rsa_decrypts_external", int(*object.Statistics.SslCipherRsaDecryptsExternal))
+
+	lastAssignedField = "ssl_cipher_rsa_encrypts"
 	d.Set("ssl_cipher_rsa_encrypts", int(*object.Statistics.SslCipherRsaEncrypts))
+
+	lastAssignedField = "ssl_cipher_rsa_encrypts_external"
 	d.Set("ssl_cipher_rsa_encrypts_external", int(*object.Statistics.SslCipherRsaEncryptsExternal))
+
+	lastAssignedField = "ssl_client_cert_expired"
 	d.Set("ssl_client_cert_expired", int(*object.Statistics.SslClientCertExpired))
+
+	lastAssignedField = "ssl_client_cert_invalid"
 	d.Set("ssl_client_cert_invalid", int(*object.Statistics.SslClientCertInvalid))
+
+	lastAssignedField = "ssl_client_cert_not_sent"
 	d.Set("ssl_client_cert_not_sent", int(*object.Statistics.SslClientCertNotSent))
+
+	lastAssignedField = "ssl_client_cert_revoked"
 	d.Set("ssl_client_cert_revoked", int(*object.Statistics.SslClientCertRevoked))
+
+	lastAssignedField = "ssl_connections"
 	d.Set("ssl_connections", int(*object.Statistics.SslConnections))
+
+	lastAssignedField = "ssl_handshake_sslv3"
 	d.Set("ssl_handshake_sslv3", int(*object.Statistics.SslHandshakeSslv3))
+
+	lastAssignedField = "ssl_handshake_t_l_sv1"
 	d.Set("ssl_handshake_t_l_sv1", int(*object.Statistics.SslHandshakeTLSv1))
+
+	lastAssignedField = "ssl_handshake_t_l_sv11"
 	d.Set("ssl_handshake_t_l_sv11", int(*object.Statistics.SslHandshakeTLSv11))
+
+	lastAssignedField = "ssl_handshake_t_l_sv12"
 	d.Set("ssl_handshake_t_l_sv12", int(*object.Statistics.SslHandshakeTLSv12))
+
+	lastAssignedField = "ssl_session_id_mem_cache_hit"
 	d.Set("ssl_session_id_mem_cache_hit", int(*object.Statistics.SslSessionIdMemCacheHit))
+
+	lastAssignedField = "ssl_session_id_mem_cache_miss"
 	d.Set("ssl_session_id_mem_cache_miss", int(*object.Statistics.SslSessionIdMemCacheMiss))
+
+	lastAssignedField = "sys_cpu_busy_percent"
 	d.Set("sys_cpu_busy_percent", int(*object.Statistics.SysCpuBusyPercent))
+
+	lastAssignedField = "sys_cpu_idle_percent"
 	d.Set("sys_cpu_idle_percent", int(*object.Statistics.SysCpuIdlePercent))
+
+	lastAssignedField = "sys_cpu_system_busy_percent"
 	d.Set("sys_cpu_system_busy_percent", int(*object.Statistics.SysCpuSystemBusyPercent))
+
+	lastAssignedField = "sys_cpu_user_busy_percent"
 	d.Set("sys_cpu_user_busy_percent", int(*object.Statistics.SysCpuUserBusyPercent))
+
+	lastAssignedField = "sys_fds_free"
 	d.Set("sys_fds_free", int(*object.Statistics.SysFdsFree))
+
+	lastAssignedField = "sys_mem_buffered"
 	d.Set("sys_mem_buffered", int(*object.Statistics.SysMemBuffered))
+
+	lastAssignedField = "sys_mem_free"
 	d.Set("sys_mem_free", int(*object.Statistics.SysMemFree))
+
+	lastAssignedField = "sys_mem_in_use"
 	d.Set("sys_mem_in_use", int(*object.Statistics.SysMemInUse))
+
+	lastAssignedField = "sys_mem_swap_total"
 	d.Set("sys_mem_swap_total", int(*object.Statistics.SysMemSwapTotal))
+
+	lastAssignedField = "sys_mem_swapped"
 	d.Set("sys_mem_swapped", int(*object.Statistics.SysMemSwapped))
+
+	lastAssignedField = "sys_mem_total"
 	d.Set("sys_mem_total", int(*object.Statistics.SysMemTotal))
+
+	lastAssignedField = "time_last_config_update"
 	d.Set("time_last_config_update", int(*object.Statistics.TimeLastConfigUpdate))
+
+	lastAssignedField = "total_backend_server_errors"
 	d.Set("total_backend_server_errors", int(*object.Statistics.TotalBackendServerErrors))
+
+	lastAssignedField = "total_bad_dns_packets"
 	d.Set("total_bad_dns_packets", int(*object.Statistics.TotalBadDnsPackets))
+
+	lastAssignedField = "total_bytes_in"
 	d.Set("total_bytes_in", int(*object.Statistics.TotalBytesIn))
+
+	lastAssignedField = "total_bytes_out"
 	d.Set("total_bytes_out", int(*object.Statistics.TotalBytesOut))
+
+	lastAssignedField = "total_conn"
 	d.Set("total_conn", int(*object.Statistics.TotalConn))
+
+	lastAssignedField = "total_current_conn"
 	d.Set("total_current_conn", int(*object.Statistics.TotalCurrentConn))
+
+	lastAssignedField = "total_dns_responses"
 	d.Set("total_dns_responses", int(*object.Statistics.TotalDnsResponses))
+
+	lastAssignedField = "total_requests"
 	d.Set("total_requests", int(*object.Statistics.TotalRequests))
+
+	lastAssignedField = "total_transactions"
 	d.Set("total_transactions", int(*object.Statistics.TotalTransactions))
+
+	lastAssignedField = "up_time"
 	d.Set("up_time", int(*object.Statistics.UpTime))
 	d.SetId("globals")
 	return nil

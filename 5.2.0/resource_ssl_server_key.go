@@ -23,44 +23,48 @@ func resourceSslServerKey() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceSslServerKeySchema(),
+	}
+}
 
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
+func getResourceSslServerKeySchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-			// Notes for this certificate
-			"note": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
+		"name": &schema.Schema{
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.NoZeroValues,
+		},
 
-			// Private key for certificate
-			"private": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				DiffSuppressFunc: suppressHashedDiffs("private"),
-			},
+		// Notes for this certificate
+		"note": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+		},
 
-			// Public certificate
-			"public": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
+		// Private key for certificate
+		"private": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+			DiffSuppressFunc: suppressHashedDiffs("private"),
+		},
 
-			// Certificate Signing Request for certificate
-			"request": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
+		// Public certificate
+		"public": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+		},
+
+		// Certificate Signing Request for certificate
+		"request": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
 		},
 	}
 }
 
-func resourceSslServerKeyRead(d *schema.ResourceData, tm interface{}) error {
+func resourceSslServerKeyRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	if objectName == "" {
 		objectName = d.Id()
@@ -74,11 +78,24 @@ func resourceSslServerKeyRead(d *schema.ResourceData, tm interface{}) error {
 		}
 		return fmt.Errorf("Failed to read vtm_server_key '%v': %v", objectName, err.ErrorText)
 	}
-	d.Set("note", string(*object.Basic.Note))
-	d.Set("private", string(*object.Basic.Private))
-	d.Set("public", string(*object.Basic.Public))
-	d.Set("request", string(*object.Basic.Request))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "note"
+	d.Set("note", string(*object.Basic.Note))
+	lastAssignedField = "private"
+	d.Set("private", string(*object.Basic.Private))
+	lastAssignedField = "public"
+	d.Set("public", string(*object.Basic.Public))
+	lastAssignedField = "request"
+	d.Set("request", string(*object.Basic.Request))
 	d.SetId(objectName)
 	return nil
 }
@@ -101,12 +118,12 @@ func resourceSslServerKeyExists(d *schema.ResourceData, tm interface{}) (bool, e
 func resourceSslServerKeyCreate(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
 	object := tm.(*vtm.VirtualTrafficManager).NewSslServerKey(objectName, d.Get("note").(string), d.Get("private").(string), d.Get("public").(string), d.Get("request").(string))
-	setString(&object.Basic.Note, d, "note")
-	setString(&object.Basic.Private, d, "private")
-	setString(&object.Basic.Public, d, "public")
-	setString(&object.Basic.Request, d, "request")
-
-	object.Apply()
+	resourceSslServerKeyObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error creating vtm_server_key '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
 	d.SetId(objectName)
 	return nil
 }
@@ -117,14 +134,21 @@ func resourceSslServerKeyUpdate(d *schema.ResourceData, tm interface{}) error {
 	if err != nil {
 		return fmt.Errorf("Failed to update vtm_server_key '%v': %v", objectName, err)
 	}
+	resourceSslServerKeyObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error updating vtm_server_key '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
+	d.SetId(objectName)
+	return nil
+}
+
+func resourceSslServerKeyObjectFieldAssignments(d *schema.ResourceData, object *vtm.SslServerKey) {
 	setString(&object.Basic.Note, d, "note")
 	setString(&object.Basic.Private, d, "private")
 	setString(&object.Basic.Public, d, "public")
 	setString(&object.Basic.Request, d, "request")
-
-	object.Apply()
-	d.SetId(objectName)
-	return nil
 }
 
 func resourceSslServerKeyDelete(d *schema.ResourceData, tm interface{}) error {

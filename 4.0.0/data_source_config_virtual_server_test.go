@@ -45,8 +45,8 @@ func TestDataSourceConfigVirtualServer(t *testing.T) {
 					resource.TestCheckResourceAttr("data.vtm_virtual_server.my_virtual_server", "web_cache_enabled", "true"),
 					// Check that default string array field is correctly set
 					resource.TestCheckResourceAttr("data.vtm_virtual_server.my_virtual_server", "gzip_include_mime.#", "2"),
-					resource.TestCheckResourceAttr("data.vtm_virtual_server.my_virtual_server", "gzip_include_mime.0", "text/html"),
-					resource.TestCheckResourceAttr("data.vtm_virtual_server.my_virtual_server", "gzip_include_mime.1", "text/plain"),
+					resource.TestCheckResourceAttr("data.vtm_virtual_server.my_virtual_server", "gzip_include_mime.4008173114", "text/html"),
+					resource.TestCheckResourceAttr("data.vtm_virtual_server.my_virtual_server", "gzip_include_mime.2435821618", "text/plain"),
 					// Check that optional string array field is correctly set
 					resource.TestCheckResourceAttr("data.vtm_virtual_server.my_virtual_server", "request_rules.#", "2"),
 					resource.TestCheckResourceAttr("data.vtm_virtual_server.my_virtual_server", "request_rules.0", "rule1"),

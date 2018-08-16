@@ -26,16 +26,16 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
-func TestDataSourceVirtualServerStatistics(t *testing.T) {
+func TestDataSourceStatisticsVirtualServerEnhanced(t *testing.T) {
 	objName := acctest.RandomWithPrefix("MyVirtualServer")
 	testRequestCount := acctest.RandIntRange(2, 20)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: func(s *terraform.State) error { return destroyDataSourceVirtualServerStatisticsConfig(objName) },
+		CheckDestroy: func(s *terraform.State) error { return destroyDataSourceStatisticsVirtualServerEnhancedConfig(objName) },
 		Steps: []resource.TestStep{
 			{
-				Config: initDataSourceVirtualServerStatisticsConfig(t, objName, testRequestCount),
+				Config: initDataSourceStatisticsVirtualServerEnhancedConfig(t, objName, testRequestCount),
 				Check: resource.ComposeTestCheckFunc(
 					// Check integer field is correctly set
 					resource.TestCheckResourceAttr("data.vtm_virtual_server_stats.my_virtual_server", "port", "1234"),
@@ -49,7 +49,7 @@ func TestDataSourceVirtualServerStatistics(t *testing.T) {
 	})
 }
 
-func initDataSourceVirtualServerStatisticsConfig(t *testing.T, name string, reqCount int) string {
+func initDataSourceStatisticsVirtualServerEnhancedConfig(t *testing.T, name string, reqCount int) string {
 	tm, err := getTestVtm()
 	if err != nil {
 		t.Fatalf("Fatal error: %+v", err)
@@ -72,10 +72,10 @@ func initDataSourceVirtualServerStatisticsConfig(t *testing.T, name string, reqC
 			t.Fatalf("Fatal error: %+v", err)
 		}
 	}
-	return getDataSourceVirtualServerStatisticsConfig(name)
+	return getDataSourceStatisticsVirtualServerEnhancedConfig(name)
 }
 
-func destroyDataSourceVirtualServerStatisticsConfig(name string) error {
+func destroyDataSourceStatisticsVirtualServerEnhancedConfig(name string) error {
 	tm, err := getTestVtm()
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ func destroyDataSourceVirtualServerStatisticsConfig(name string) error {
 	return nil
 }
 
-func getDataSourceVirtualServerStatisticsConfig(name string) string {
+func getDataSourceStatisticsVirtualServerEnhancedConfig(name string) string {
 	return fmt.Sprintf(`
 		data "vtm_virtual_server_stats" "my_virtual_server" {
 			name = "%s"

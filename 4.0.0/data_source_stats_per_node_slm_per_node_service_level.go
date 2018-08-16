@@ -66,7 +66,7 @@ func dataSourcePerNodeSlmPerNodeServiceLevelStatistics() *schema.Resource {
 	}
 }
 
-func dataSourcePerNodeSlmPerNodeServiceLevelStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourcePerNodeSlmPerNodeServiceLevelStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetPerNodeSlmPerNodeServiceLevelStatistics(objectName)
 	if err != nil {
@@ -76,11 +76,32 @@ func dataSourcePerNodeSlmPerNodeServiceLevelStatisticsRead(d *schema.ResourceDat
 		}
 		return fmt.Errorf("Failed to read vtm_per_node_service_level '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "node_port"
 	d.Set("node_port", int(*object.Statistics.NodePort))
+
+	lastAssignedField = "response_max"
 	d.Set("response_max", int(*object.Statistics.ResponseMax))
+
+	lastAssignedField = "response_mean"
 	d.Set("response_mean", int(*object.Statistics.ResponseMean))
+
+	lastAssignedField = "response_min"
 	d.Set("response_min", int(*object.Statistics.ResponseMin))
+
+	lastAssignedField = "total_conn"
 	d.Set("total_conn", int(*object.Statistics.TotalConn))
+
+	lastAssignedField = "total_non_conf"
 	d.Set("total_non_conf", int(*object.Statistics.TotalNonConf))
 	d.SetId(objectName)
 	return nil

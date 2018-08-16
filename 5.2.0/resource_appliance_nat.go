@@ -23,185 +23,199 @@ func resourceApplianceNat() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceApplianceNatSchema(),
+	}
+}
 
-			// This is table 'many_to_one_all_ports'
-			"many_to_one_all_ports": &schema.Schema{
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
+func getResourceApplianceNatSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-						// pool
-						"pool": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+		// This is table 'many_to_one_all_ports'
+		"many_to_one_all_ports": &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
 
-						// rule_number
-						"rule_number": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+					// pool
+					"pool": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
 
-						// tip
-						"tip": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+					// rule_number
+					"rule_number": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
+
+					// tip
+					"tip": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
 					},
 				},
 			},
+		},
 
-			// JSON representation of many_to_one_all_ports
-			"many_to_one_all_ports_json": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateJsonString,
-			},
+		// JSON representation of many_to_one_all_ports
+		"many_to_one_all_ports_json": &schema.Schema{
+			Type:         schema.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.ValidateJsonString,
+		},
 
-			// This is table 'many_to_one_port_locked'
-			"many_to_one_port_locked": &schema.Schema{
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
+		// This is table 'many_to_one_port_locked'
+		"many_to_one_port_locked": &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
 
-						// pool
-						"pool": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+					// pool
+					"pool": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
 
-						// port
-						"port": &schema.Schema{
-							Type:         schema.TypeInt,
-							Required:     true,
-							ValidateFunc: validation.IntBetween(1, 65535),
-						},
+					// port
+					"port": &schema.Schema{
+						Type:         schema.TypeInt,
+						Required:     true,
+						ValidateFunc: validation.IntBetween(1, 65535),
+					},
 
-						// protocol
-						"protocol": &schema.Schema{
-							Type:         schema.TypeString,
-							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"icmp", "sctp", "tcp", "udp", "udplite"}, false),
-						},
+					// protocol
+					"protocol": &schema.Schema{
+						Type:         schema.TypeString,
+						Required:     true,
+						ValidateFunc: validation.StringInSlice([]string{"icmp", "sctp", "tcp", "udp", "udplite"}, false),
+					},
 
-						// rule_number
-						"rule_number": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+					// rule_number
+					"rule_number": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
 
-						// tip
-						"tip": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+					// tip
+					"tip": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
 					},
 				},
 			},
+		},
 
-			// JSON representation of many_to_one_port_locked
-			"many_to_one_port_locked_json": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateJsonString,
-			},
+		// JSON representation of many_to_one_port_locked
+		"many_to_one_port_locked_json": &schema.Schema{
+			Type:         schema.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.ValidateJsonString,
+		},
 
-			// This is table 'one_to_one'
-			"one_to_one": &schema.Schema{
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
+		// This is table 'one_to_one'
+		"one_to_one": &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
 
-						// enable_inbound
-						"enable_inbound": &schema.Schema{
-							Type:     schema.TypeBool,
-							Required: true,
-						},
+					// enable_inbound
+					"enable_inbound": &schema.Schema{
+						Type:     schema.TypeBool,
+						Required: true,
+					},
 
-						// ip
-						"ip": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+					// ip
+					"ip": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
 
-						// rule_number
-						"rule_number": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+					// rule_number
+					"rule_number": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
 
-						// tip
-						"tip": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+					// tip
+					"tip": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
 					},
 				},
 			},
+		},
 
-			// JSON representation of one_to_one
-			"one_to_one_json": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateJsonString,
-			},
+		// JSON representation of one_to_one
+		"one_to_one_json": &schema.Schema{
+			Type:         schema.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.ValidateJsonString,
+		},
 
-			// This is table 'port_mapping'
-			"port_mapping": &schema.Schema{
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
+		// This is table 'port_mapping'
+		"port_mapping": &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
 
-						// dport_first
-						"dport_first": &schema.Schema{
-							Type:         schema.TypeInt,
-							Required:     true,
-							ValidateFunc: validation.IntBetween(1, 65535),
-						},
+					// dport_first
+					"dport_first": &schema.Schema{
+						Type:         schema.TypeInt,
+						Required:     true,
+						ValidateFunc: validation.IntBetween(1, 65535),
+					},
 
-						// dport_last
-						"dport_last": &schema.Schema{
-							Type:         schema.TypeInt,
-							Required:     true,
-							ValidateFunc: validation.IntBetween(1, 65535),
-						},
+					// dport_last
+					"dport_last": &schema.Schema{
+						Type:         schema.TypeInt,
+						Required:     true,
+						ValidateFunc: validation.IntBetween(1, 65535),
+					},
 
-						// rule_number
-						"rule_number": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+					// rule_number
+					"rule_number": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
 
-						// virtual_server
-						"virtual_server": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+					// virtual_server
+					"virtual_server": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
 					},
 				},
 			},
+		},
 
-			// JSON representation of port_mapping
-			"port_mapping_json": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateJsonString,
-			},
+		// JSON representation of port_mapping
+		"port_mapping_json": &schema.Schema{
+			Type:         schema.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.ValidateJsonString,
 		},
 	}
 }
 
-func resourceApplianceNatRead(d *schema.ResourceData, tm interface{}) error {
+func resourceApplianceNatRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	object, err := tm.(*vtm.VirtualTrafficManager).GetApplianceNat()
 	if err != nil {
 		return fmt.Errorf("Failed to read vtm_nat: %v", err.ErrorText)
 	}
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "many_to_one_all_ports"
 	manyToOneAllPorts := make([]map[string]interface{}, 0, len(*object.Basic.ManyToOneAllPorts))
 	for _, item := range *object.Basic.ManyToOneAllPorts {
 		itemTerraform := make(map[string]interface{})
@@ -219,7 +233,7 @@ func resourceApplianceNatRead(d *schema.ResourceData, tm interface{}) error {
 	d.Set("many_to_one_all_ports", manyToOneAllPorts)
 	manyToOneAllPortsJson, _ := json.Marshal(manyToOneAllPorts)
 	d.Set("many_to_one_all_ports_json", manyToOneAllPortsJson)
-
+	lastAssignedField = "many_to_one_port_locked"
 	manyToOnePortLocked := make([]map[string]interface{}, 0, len(*object.Basic.ManyToOnePortLocked))
 	for _, item := range *object.Basic.ManyToOnePortLocked {
 		itemTerraform := make(map[string]interface{})
@@ -243,7 +257,7 @@ func resourceApplianceNatRead(d *schema.ResourceData, tm interface{}) error {
 	d.Set("many_to_one_port_locked", manyToOnePortLocked)
 	manyToOnePortLockedJson, _ := json.Marshal(manyToOnePortLocked)
 	d.Set("many_to_one_port_locked_json", manyToOnePortLockedJson)
-
+	lastAssignedField = "one_to_one"
 	oneToOne := make([]map[string]interface{}, 0, len(*object.Basic.OneToOne))
 	for _, item := range *object.Basic.OneToOne {
 		itemTerraform := make(map[string]interface{})
@@ -264,7 +278,7 @@ func resourceApplianceNatRead(d *schema.ResourceData, tm interface{}) error {
 	d.Set("one_to_one", oneToOne)
 	oneToOneJson, _ := json.Marshal(oneToOne)
 	d.Set("one_to_one_json", oneToOneJson)
-
+	lastAssignedField = "port_mapping"
 	portMapping := make([]map[string]interface{}, 0, len(*object.Basic.PortMapping))
 	for _, item := range *object.Basic.PortMapping {
 		itemTerraform := make(map[string]interface{})
@@ -285,7 +299,6 @@ func resourceApplianceNatRead(d *schema.ResourceData, tm interface{}) error {
 	d.Set("port_mapping", portMapping)
 	portMappingJson, _ := json.Marshal(portMapping)
 	d.Set("port_mapping_json", portMappingJson)
-
 	d.SetId("nat")
 	return nil
 }
@@ -300,7 +313,7 @@ func resourceApplianceNatUpdate(d *schema.ResourceData, tm interface{}) error {
 	if manyToOneAllPortsJson, ok := d.GetOk("many_to_one_all_ports_json"); ok {
 		_ = json.Unmarshal([]byte(manyToOneAllPortsJson.(string)), object.Basic.ManyToOneAllPorts)
 	} else if manyToOneAllPorts, ok := d.GetOk("many_to_one_all_ports"); ok {
-		for _, row := range manyToOneAllPorts.(*schema.Set).List() { // VTM-37687: manyToOneAllPorts.([]interface{}) {
+		for _, row := range manyToOneAllPorts.(*schema.Set).List() {
 			itemTerraform := row.(map[string]interface{})
 			VtmObject := vtm.ApplianceNatManyToOneAllPorts{}
 			VtmObject.Pool = getStringAddr(itemTerraform["pool"].(string))
@@ -317,7 +330,7 @@ func resourceApplianceNatUpdate(d *schema.ResourceData, tm interface{}) error {
 	if manyToOnePortLockedJson, ok := d.GetOk("many_to_one_port_locked_json"); ok {
 		_ = json.Unmarshal([]byte(manyToOnePortLockedJson.(string)), object.Basic.ManyToOnePortLocked)
 	} else if manyToOnePortLocked, ok := d.GetOk("many_to_one_port_locked"); ok {
-		for _, row := range manyToOnePortLocked.(*schema.Set).List() { // VTM-37687: manyToOnePortLocked.([]interface{}) {
+		for _, row := range manyToOnePortLocked.(*schema.Set).List() {
 			itemTerraform := row.(map[string]interface{})
 			VtmObject := vtm.ApplianceNatManyToOnePortLocked{}
 			VtmObject.Pool = getStringAddr(itemTerraform["pool"].(string))
@@ -336,7 +349,7 @@ func resourceApplianceNatUpdate(d *schema.ResourceData, tm interface{}) error {
 	if oneToOneJson, ok := d.GetOk("one_to_one_json"); ok {
 		_ = json.Unmarshal([]byte(oneToOneJson.(string)), object.Basic.OneToOne)
 	} else if oneToOne, ok := d.GetOk("one_to_one"); ok {
-		for _, row := range oneToOne.(*schema.Set).List() { // VTM-37687: oneToOne.([]interface{}) {
+		for _, row := range oneToOne.(*schema.Set).List() {
 			itemTerraform := row.(map[string]interface{})
 			VtmObject := vtm.ApplianceNatOneToOne{}
 			VtmObject.EnableInbound = getBoolAddr(itemTerraform["enable_inbound"].(bool))
@@ -354,7 +367,7 @@ func resourceApplianceNatUpdate(d *schema.ResourceData, tm interface{}) error {
 	if portMappingJson, ok := d.GetOk("port_mapping_json"); ok {
 		_ = json.Unmarshal([]byte(portMappingJson.(string)), object.Basic.PortMapping)
 	} else if portMapping, ok := d.GetOk("port_mapping"); ok {
-		for _, row := range portMapping.(*schema.Set).List() { // VTM-37687: portMapping.([]interface{}) {
+		for _, row := range portMapping.(*schema.Set).List() {
 			itemTerraform := row.(map[string]interface{})
 			VtmObject := vtm.ApplianceNatPortMapping{}
 			VtmObject.DportFirst = getIntAddr(itemTerraform["dport_first"].(int))
@@ -368,7 +381,11 @@ func resourceApplianceNatUpdate(d *schema.ResourceData, tm interface{}) error {
 		d.Set("port_mapping", make([]map[string]interface{}, 0, len(*object.Basic.PortMapping)))
 	}
 
-	object.Apply()
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error updating vtm_nat: %s %s", applyErr.ErrorText, info)
+	}
 	d.SetId("nat")
 	return nil
 }

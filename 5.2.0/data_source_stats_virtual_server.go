@@ -390,7 +390,7 @@ func dataSourceVirtualServerStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceVirtualServerStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceVirtualServerStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetVirtualServerStatistics(objectName)
 	if err != nil {
@@ -400,62 +400,185 @@ func dataSourceVirtualServerStatisticsRead(d *schema.ResourceData, tm interface{
 		}
 		return fmt.Errorf("Failed to read vtm_virtual_servers '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "auth_saml_redirects"
 	d.Set("auth_saml_redirects", int(*object.Statistics.AuthSamlRedirects))
+
+	lastAssignedField = "auth_saml_responses"
 	d.Set("auth_saml_responses", int(*object.Statistics.AuthSamlResponses))
+
+	lastAssignedField = "auth_saml_responses_accepted"
 	d.Set("auth_saml_responses_accepted", int(*object.Statistics.AuthSamlResponsesAccepted))
+
+	lastAssignedField = "auth_saml_responses_rejected"
 	d.Set("auth_saml_responses_rejected", int(*object.Statistics.AuthSamlResponsesRejected))
+
+	lastAssignedField = "auth_sessions_created"
 	d.Set("auth_sessions_created", int(*object.Statistics.AuthSessionsCreated))
+
+	lastAssignedField = "auth_sessions_rejected"
 	d.Set("auth_sessions_rejected", int(*object.Statistics.AuthSessionsRejected))
+
+	lastAssignedField = "auth_sessions_used"
 	d.Set("auth_sessions_used", int(*object.Statistics.AuthSessionsUsed))
+
+	lastAssignedField = "bw_limit_bytes_drop"
 	d.Set("bw_limit_bytes_drop", int(*object.Statistics.BwLimitBytesDrop))
+
+	lastAssignedField = "bw_limit_pkts_drop"
 	d.Set("bw_limit_pkts_drop", int(*object.Statistics.BwLimitPktsDrop))
+
+	lastAssignedField = "bytes_in"
 	d.Set("bytes_in", int(*object.Statistics.BytesIn))
+
+	lastAssignedField = "bytes_out"
 	d.Set("bytes_out", int(*object.Statistics.BytesOut))
+
+	lastAssignedField = "cert_status_requests"
 	d.Set("cert_status_requests", int(*object.Statistics.CertStatusRequests))
+
+	lastAssignedField = "cert_status_responses"
 	d.Set("cert_status_responses", int(*object.Statistics.CertStatusResponses))
+
+	lastAssignedField = "connect_timed_out"
 	d.Set("connect_timed_out", int(*object.Statistics.ConnectTimedOut))
+
+	lastAssignedField = "connection_errors"
 	d.Set("connection_errors", int(*object.Statistics.ConnectionErrors))
+
+	lastAssignedField = "connection_failures"
 	d.Set("connection_failures", int(*object.Statistics.ConnectionFailures))
+
+	lastAssignedField = "current_conn"
 	d.Set("current_conn", int(*object.Statistics.CurrentConn))
+
+	lastAssignedField = "data_timed_out"
 	d.Set("data_timed_out", int(*object.Statistics.DataTimedOut))
+
+	lastAssignedField = "direct_replies"
 	d.Set("direct_replies", int(*object.Statistics.DirectReplies))
+
+	lastAssignedField = "discard"
 	d.Set("discard", int(*object.Statistics.Discard))
+
+	lastAssignedField = "gzip"
 	d.Set("gzip", int(*object.Statistics.Gzip))
+
+	lastAssignedField = "gzip_bytes_saved"
 	d.Set("gzip_bytes_saved", int(*object.Statistics.GzipBytesSaved))
+
+	lastAssignedField = "http_cache_hit_rate"
 	d.Set("http_cache_hit_rate", int(*object.Statistics.HttpCacheHitRate))
+
+	lastAssignedField = "http_cache_hits"
 	d.Set("http_cache_hits", int(*object.Statistics.HttpCacheHits))
+
+	lastAssignedField = "http_cache_lookups"
 	d.Set("http_cache_lookups", int(*object.Statistics.HttpCacheLookups))
+
+	lastAssignedField = "http_rewrite_cookie"
 	d.Set("http_rewrite_cookie", int(*object.Statistics.HttpRewriteCookie))
+
+	lastAssignedField = "http_rewrite_location"
 	d.Set("http_rewrite_location", int(*object.Statistics.HttpRewriteLocation))
+
+	lastAssignedField = "keepalive_timed_out"
 	d.Set("keepalive_timed_out", int(*object.Statistics.KeepaliveTimedOut))
+
+	lastAssignedField = "max_conn"
 	d.Set("max_conn", int(*object.Statistics.MaxConn))
+
+	lastAssignedField = "max_duration_timed_out"
 	d.Set("max_duration_timed_out", int(*object.Statistics.MaxDurationTimedOut))
+
+	lastAssignedField = "pkts_in"
 	d.Set("pkts_in", int(*object.Statistics.PktsIn))
+
+	lastAssignedField = "pkts_out"
 	d.Set("pkts_out", int(*object.Statistics.PktsOut))
+
+	lastAssignedField = "port"
 	d.Set("port", int(*object.Statistics.Port))
+
+	lastAssignedField = "processing_timed_out"
 	d.Set("processing_timed_out", int(*object.Statistics.ProcessingTimedOut))
+
+	lastAssignedField = "protocol"
 	d.Set("protocol", string(*object.Statistics.Protocol))
+
+	lastAssignedField = "sip_rejected_requests"
 	d.Set("sip_rejected_requests", int(*object.Statistics.SipRejectedRequests))
+
+	lastAssignedField = "sip_total_calls"
 	d.Set("sip_total_calls", int(*object.Statistics.SipTotalCalls))
+
+	lastAssignedField = "ssl_cache_lookup"
 	d.Set("ssl_cache_lookup", int(*object.Statistics.SslCacheLookup))
+
+	lastAssignedField = "ssl_cache_miss"
 	d.Set("ssl_cache_miss", int(*object.Statistics.SslCacheMiss))
+
+	lastAssignedField = "ssl_cache_rejected"
 	d.Set("ssl_cache_rejected", int(*object.Statistics.SslCacheRejected))
+
+	lastAssignedField = "ssl_cache_resumed"
 	d.Set("ssl_cache_resumed", int(*object.Statistics.SslCacheResumed))
+
+	lastAssignedField = "ssl_cache_saved"
 	d.Set("ssl_cache_saved", int(*object.Statistics.SslCacheSaved))
+
+	lastAssignedField = "ssl_new_session"
 	d.Set("ssl_new_session", int(*object.Statistics.SslNewSession))
+
+	lastAssignedField = "ssl_ticket_expired"
 	d.Set("ssl_ticket_expired", int(*object.Statistics.SslTicketExpired))
+
+	lastAssignedField = "ssl_ticket_issued"
 	d.Set("ssl_ticket_issued", int(*object.Statistics.SslTicketIssued))
+
+	lastAssignedField = "ssl_ticket_key_not_found"
 	d.Set("ssl_ticket_key_not_found", int(*object.Statistics.SslTicketKeyNotFound))
+
+	lastAssignedField = "ssl_ticket_received"
 	d.Set("ssl_ticket_received", int(*object.Statistics.SslTicketReceived))
+
+	lastAssignedField = "ssl_ticket_rejected"
 	d.Set("ssl_ticket_rejected", int(*object.Statistics.SslTicketRejected))
+
+	lastAssignedField = "ssl_ticket_resumed"
 	d.Set("ssl_ticket_resumed", int(*object.Statistics.SslTicketResumed))
+
+	lastAssignedField = "total_dgram"
 	d.Set("total_dgram", int(*object.Statistics.TotalDgram))
+
+	lastAssignedField = "total_http1_requests"
 	d.Set("total_http1_requests", int(*object.Statistics.TotalHttp1Requests))
+
+	lastAssignedField = "total_http2_requests"
 	d.Set("total_http2_requests", int(*object.Statistics.TotalHttp2Requests))
+
+	lastAssignedField = "total_http_requests"
 	d.Set("total_http_requests", int(*object.Statistics.TotalHttpRequests))
+
+	lastAssignedField = "total_requests"
 	d.Set("total_requests", int(*object.Statistics.TotalRequests))
+
+	lastAssignedField = "total_tcp_reset"
 	d.Set("total_tcp_reset", int(*object.Statistics.TotalTcpReset))
+
+	lastAssignedField = "total_udp_unreachables"
 	d.Set("total_udp_unreachables", int(*object.Statistics.TotalUdpUnreachables))
+
+	lastAssignedField = "udp_timed_out"
 	d.Set("udp_timed_out", int(*object.Statistics.UdpTimedOut))
 	d.SetId(objectName)
 	return nil

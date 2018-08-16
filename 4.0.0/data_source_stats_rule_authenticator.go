@@ -52,7 +52,7 @@ func dataSourceRuleAuthenticatorStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceRuleAuthenticatorStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceRuleAuthenticatorStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetRuleAuthenticatorStatistics(objectName)
 	if err != nil {
@@ -62,9 +62,26 @@ func dataSourceRuleAuthenticatorStatisticsRead(d *schema.ResourceData, tm interf
 		}
 		return fmt.Errorf("Failed to read vtm_rule_authenticators '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "errors"
 	d.Set("errors", int(*object.Statistics.Errors))
+
+	lastAssignedField = "fails"
 	d.Set("fails", int(*object.Statistics.Fails))
+
+	lastAssignedField = "passes"
 	d.Set("passes", int(*object.Statistics.Passes))
+
+	lastAssignedField = "requests"
 	d.Set("requests", int(*object.Statistics.Requests))
 	d.SetId(objectName)
 	return nil

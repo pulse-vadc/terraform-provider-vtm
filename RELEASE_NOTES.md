@@ -1,0 +1,57 @@
+Pulse Secure Terraform Provider 18.2 -> 15 August 2018
+================================================================================
+
+Major Features
+================================================================================
+
+- Support for vTM 18.2 Release
+  Added support for the Pulse Secure Virtual Traffic Manager 18.2 release. Use
+  the terraform-provider-vtm_6.0.0 to access the new features of 18.2 from
+  Terraform.
+
+Other Changes in vTM 18.2
+================================================================================
+
+
+- Provider
+
+ * Removed duplicate Read() function from data sources which are based on
+   configuration objects and already have a Read() function.
+   VTMTF-61
+
+ * Fixed an issue where 'plan' or 'apply' will incorrectly report certain list
+   fields as changed due to the order in which the vTM REST API returns their
+   values.
+   VTMTF-88
+
+ * Added logging of REST requests and responses in the provider when environment
+   TF_LOG=DEBUG is set to make troubleshooting simpler
+   VTMTF-109
+
+ * Fixed an issue where externally-managed pools (eg. autoscaling pools) could
+   fail to update due to invalid node weight settings in nodes_table.
+   VTMTF-115
+
+ * Fixed an issue where the provider would segfault if an expected value was
+   missing from a vTM REST response.  The provider now exits with an appropriate
+   error message.
+   VTMTF-94
+
+ * Fixed an issue with the vtm_global_stats data source where the inclusion of
+   deprecated fields caused the provider to crash.
+   VTMTF-97
+
+ * Improved error reporting in the event an "apply" operation fails due to an
+   error with the vTM REST call.
+   VTMTF-105
+
+ * Fixed an issue where a failure to authenticate with the vTM Terraform provider
+   produced a generic connection failed message instead of a specific
+   authentication error.
+   VTMTF-85
+
+ * Added new "linux", "win", "mac" and "all" targets to build.sh to make it easy
+   to build binaries for any plaform
+   VTMTF-80
+
+

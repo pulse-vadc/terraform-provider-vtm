@@ -14,6 +14,26 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+func formatErrorInfo(errorInfo map[string]interface{}) string {
+	errorMsg := ""
+	for section, info := range errorInfo {
+		for field, errors := range info.(map[string]interface{}) {
+			errorMsg += fmt.Sprintf("; %s_%s %s", section, field, errors.(map[string]interface{})["error_text"])
+		}
+	}
+	return errorMsg
+}
+
+func setAllNotRequired(fields map[string]*schema.Schema) map[string]*schema.Schema {
+	for field := range fields {
+		if field != "name" {
+			fields[field].Optional = true
+			fields[field].Required = false
+		}
+	}
+	return fields
+}
+
 func validateTableJson(tableStruct interface{}, requiredFields []string) schema.SchemaValidateFunc {
 	return func (i interface{}, k string) (s []string, es []error) {
 		err := json.Unmarshal(i.([]byte), tableStruct)
@@ -54,6 +74,10 @@ func getStringListAddr(target []string) *[]string {
 	return &target
 }
 
+func getStringSetAddr(target []string) *[]string {
+	return &target
+}
+
 func getIntAddr(target int) *int {
 	return &target
 }
@@ -87,9 +111,26 @@ func setStringList(target **[]string, d *schema.ResourceData, key string) {
 	*target = &list
 }
 
+func setStringSet(target **[]string, d *schema.ResourceData, key string) {
+	list := expandStringList(d.Get(key).(*schema.Set).List())
+	*target = &list
+}
+
 func expandStringList(interfaceList []interface{}) []string {
 	strList := make([]string, 0, len(interfaceList))
 	for _, value := range interfaceList {
+		strVal, ok := value.(string)
+		if ok && strVal != "" {
+			strList = append(strList, strVal)
+		}
+	}
+	return strList
+}
+
+func expandStringSet(set *schema.Set) []string {
+	itemList := set.List()
+	strList := make([]string, 0, len(itemList))
+	for _, value := range itemList {
 		strVal, ok := value.(string)
 		if ok && strVal != "" {
 			strList = append(strList, strVal)

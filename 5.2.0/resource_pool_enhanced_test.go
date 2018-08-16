@@ -13,7 +13,7 @@ package main
 
 import (
 	"fmt"
-	_ "regexp"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -76,6 +76,31 @@ func TestResourcePoolEnhanced(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					// Check that auto_scaling_extraargs is present and has expected value
 					resource.TestCheckResourceAttr("vtm_pool.test_vtm_pool", "auto_scaling_extraargs", "--foo=bar"),
+				),
+			},
+		},
+	})
+
+	invalidStateRegex, _ := regexp.Compile("active disabled draining")
+	duplicateNodeRegex, _ := regexp.Compile("invalid.*?duplicates were found")
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPoolEnhancedDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: getBasicPoolEnhancedConfigWithNodes(objName, "INVALID_STATE", "192.168.0.12:80"),
+				ExpectError: invalidStateRegex,
+			},
+			{
+				Config: getBasicPoolEnhancedConfigWithNodes(objName, "active", "192.168.0.10:80"),
+				ExpectError: duplicateNodeRegex,
+			},
+			{
+				Config: getBasicPoolEnhancedConfigWithNodes(objName, "draining", "192.168.0.12:80"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckPoolEnhancedExists,
+					resource.TestCheckResourceAttr("vtm_pool.test_vtm_pool", "nodes_table.#", "3"),
 				),
 			},
 		},
@@ -151,6 +176,30 @@ func getBasicPoolEnhancedConfig(name string) string {
 			name = "%s"
 		}`,
 		name,
+	)
+}
+
+func getBasicPoolEnhancedConfigWithNodes(name, state, node string) string {
+	return fmt.Sprintf(`
+		resource "vtm_pool" "test_vtm_pool" {
+			name = "%s"
+			nodes_table {
+				node = "192.168.0.10:80"
+				weight = 1
+				state = "active"
+			}
+			nodes_table {
+				node = "192.168.0.11:80"
+				weight = 2
+				state = "active"
+			}
+			nodes_table {
+				node = "%s"
+				weight = 3
+				state = "%s"
+			}
+		}`,
+		name, node, state,
 	)
 }
 

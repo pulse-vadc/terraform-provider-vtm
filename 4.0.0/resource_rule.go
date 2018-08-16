@@ -24,25 +24,29 @@ func resourceRule() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceRuleSchema(),
+	}
+}
 
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
+func getResourceRuleSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-			// Object text
-			"content": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
+		"name": &schema.Schema{
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.NoZeroValues,
+		},
+
+		// Object text
+		"content": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
 		},
 	}
 }
 
-func resourceRuleRead(d *schema.ResourceData, tm interface{}) error {
+func resourceRuleRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	if objectName == "" {
 		objectName = d.Id()
@@ -56,6 +60,16 @@ func resourceRuleRead(d *schema.ResourceData, tm interface{}) error {
 		}
 		return fmt.Errorf("Failed to read vtm_rule '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
 	d.Set("content", object)
 	d.SetId(objectName)
 	return nil

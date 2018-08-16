@@ -14,6 +14,10 @@ package main
  *   - Setting enum to invalid value causes invalid config error
  *   - Setting integer field to value below min causes invalid config error
  *   - Setting integer field to value above max causes invalid config error
+ *   - Re-ordering a REST list field causes a config change
+ *   - Re-ordering a REST set field does not cause a config change
+ *   - Re-ordering a REST list field in a table causes a config change
+ *   - Re-ordering a REST set field in a table does not cause a config change
  */
 
 import (
@@ -54,8 +58,8 @@ func TestResourceVirtualServerEnhanced(t *testing.T) {
 					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "request_rules.#", "0"),
 					// Test that a default-populated list is correctly populated
 					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "gzip_include_mime.#", "2"),
-					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "gzip_include_mime.0", "text/html"),
-					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "gzip_include_mime.1", "text/plain"),
+					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "gzip_include_mime.4008173114", "text/html"),
+					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "gzip_include_mime.2435821618", "text/plain"),
 					// Test that a default-empty table is empty
 					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "ssl_ocsp_issuers.#", "0"),
 				),
@@ -77,7 +81,7 @@ func TestResourceVirtualServerEnhanced(t *testing.T) {
 					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "request_rules.1", "rule2"),
 					// Check that the default value of a list field has been replaced by a propvided value
 					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "gzip_include_mime.#", "1"),
-					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "gzip_include_mime.0", "application/test"),
+					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "gzip_include_mime.2372034088", "application/json"),
 					// Test that a table is correctly populated
 					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "ssl_ocsp_issuers.#", "2"),
 					resource.TestCheckResourceAttr("vtm_virtual_server.my_vs", "ssl_ocsp_issuers.3824273407.issuer", "me"),
@@ -135,6 +139,60 @@ func TestResourceVirtualServerEnhanced(t *testing.T) {
 			},
 		},
 	})
+
+	// Test re-ordering of entries in list and set fields
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckVirtualServerEnhancedDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: getAdvancedVirtualServerEnhancedConfigWithListsAndSets(objName, "rule1", "rule2", "text/type1", "text/type2"),
+			},
+			{
+				Config: getAdvancedVirtualServerEnhancedConfigWithListsAndSets(objName, "rule1", "rule2", "text/type1", "text/type2"),
+				PlanOnly: true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				Config: getAdvancedVirtualServerEnhancedConfigWithListsAndSets(objName, "rule2", "rule1", "text/type1", "text/type2"),
+				PlanOnly: true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: getAdvancedVirtualServerEnhancedConfigWithListsAndSets(objName, "rule1", "rule2", "text/type2", "text/type1"),
+				PlanOnly: true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+
+	// Test re-ordering of entries in list and set fields within tables
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckVirtualServerEnhancedDestroyWithCerts,
+		Steps: []resource.TestStep{
+			{
+				Config: getAdvancedVirtualServerEnhancedConfigWithTableListsAndSets(t, objName, "cert1", "cert2", "1.com", "2.com"),
+			},
+			{
+				Config: getAdvancedVirtualServerEnhancedConfigWithTableListsAndSets(t, objName, "cert1", "cert2", "1.com", "2.com"),
+				PlanOnly: true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				Config: getAdvancedVirtualServerEnhancedConfigWithTableListsAndSets(t, objName, "cert2", "cert1", "1.com", "2.com"),
+				PlanOnly: true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: getAdvancedVirtualServerEnhancedConfigWithTableListsAndSets(t, objName, "cert1", "cert2", "2.com", "1.com"),
+				PlanOnly: true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
 }
 
 func testAccCheckVirtualServerEnhancedExists(s *terraform.State) error {
@@ -163,6 +221,27 @@ func testAccCheckVirtualServerEnhancedDestroy(s *terraform.State) error {
 		tm := testAccProvider.Meta().(*vtm.VirtualTrafficManager)
 		if _, err := tm.GetVirtualServer(objectName); err == nil {
 			return fmt.Errorf("Virtual server %s still exists", objectName)
+		}
+	}
+
+	return nil
+}
+
+func testAccCheckVirtualServerEnhancedDestroyWithCerts(s *terraform.State) error {
+	err := testAccCheckVirtualServerEnhancedDestroy(s)
+	if err != nil {
+		return err
+	}
+
+	tm, err := getTestVtm()
+	if err != nil {
+        return err
+    }
+
+	for _, certName := range []string{"cert1", "cert2", "cert3"} {
+	    deleteErr := tm.DeleteSslServerKey(certName)
+		if deleteErr != nil {
+			return fmt.Errorf(deleteErr.ErrorText)
 		}
 	}
 
@@ -208,17 +287,110 @@ func getAdvancedVirtualServerEnhancedConfig(name, protocol string, port int) str
 			port = %d
 			protocol = "%s"
 			request_rules = ["rule1", "rule2"]
-			gzip_include_mime = ["application/test"]
+			gzip_include_mime = ["application/json"]
 			web_cache_enabled = true
 
 			ssl_ocsp_issuers {
 				issuer = "me"
 			}
-			# TODO: add this back in when VTM-37687
 			ssl_ocsp_issuers {
 				issuer = "DEFAULT"
 			}
 		}`,
 		name, port, protocol,
+	)
+}
+
+func getAdvancedVirtualServerEnhancedConfigWithListsAndSets(name, listVal1, listVal2, setVal1, setVal2 string) string {
+	return fmt.Sprintf(`
+		resource "vtm_virtual_server" "my_vs" {
+			name = "%s"
+			pool = "discard"
+			port = 80
+			request_rules = ["%s", "%s"]
+			gzip_include_mime = ["%s", "%s"]
+		}`,
+		name, listVal1, listVal2, setVal1, setVal2,
+	)
+}
+
+func getAdvancedVirtualServerEnhancedConfigWithTableListsAndSets(t *testing.T, name, listVal1, listVal2, setVal1, setVal2 string) string {
+	tm, err := getTestVtm()
+	if err != nil {
+		t.Fatalf("%#v", err)
+	}
+
+	private := `-----BEGIN RSA PRIVATE KEY-----
+MIIEogIBAAKCAQEApEPRlK+xJbQfUenl9H4nLEkQaH5L8/9F+pcjJW14EdlSkI3s
+6bPe+eGtWf0XSzDXzOqAufERWrKyhw21c+UYoTA64i43T9nwvlRtxXxcok+VqmqC
+HMCT5V7d82DKXnEEE6J5LwmHo48MsaQsBrjeyGVA8n40JDoM3qC1IlYxEoqouRf8
+5eYWYAugL1PSnMT71fZy6VUAaeFRVRwREc3RFxkKa9GEraCaDGp7jfmdrNH1A8Pn
+ns3um6kWuRHIliewFhUmc1gTxoQurVTtQh/FQViA6UbQtVCcScYarjqo9dgcuz7R
+ABCEBnTx7gcmDeB6VR7luN3MGTc8gupJOjNEawIDAQABAoIBAHl+s8/ulu7VJ+k1
+P+EzQZQOwnUXHORuZfrvuI4hRpKlE91ZK+a7JGvcEJSjjowNpz+oHufotrZHv6YG
+bLQ4uZvXCWZrWnvULa0I01wjHHzssj0mo+/SPFGFdlJhv6xUmPhQzqMMwGcoEfJ+
+BBZAvH6p7Xyt/bDhws0TPoYUDB2yg0VN0lgdjg3S/xR2od8ggZBWow5DV3S0j5ta
+QlLojcDgHh6MQ1VOHIUHhillHUKuhlHLhukUHUKhkHKLldMPUrqhmJCaGVSDGr9+
+2pjPHz04fp7CZ264rmUyHCGhwhjz4FH1KqkVM5LxoKhbOobwivhrhI/g4skgPxfb
+Y7lwxsECgYEA2JgEzk6tnCZO8UfiR+FSvCLWmFJAlHuFasUy8B0jpZIlRNxt88iZ
+BhsHIJadC09fmMF6WdE1KTZgNnMnm675FDSSKjk12DhGzU/zRqaBh0NE/Lemqe8/
+wwn3oLd3Z++zcRJj7P6NCoQN8BEIJ0voiqje+ppEkumfTQ8VEHxGEuECgYEAwiaN
+F4W5Z0Y2EEnkwbz1w+Fzaur0g3balipfjt/Up4xWDnsMdP7xPzny2rGzfqfOpUOF
+dRR2YwXGhAcTMpo+Nblg9/0YpJ500RDxMMYEj8bYjTaEFJQ4a7SSvki35pFM0/pT
+smhyWA04U/ttbs3+XosN335JsbcopZfT3zF3zMsCgYBWDniCXAJgs1vURAJlGuKb
+e6AV30BnfnhxBq8Jdhpus5V5Obe6D661HVIEobL+BmhuMhlhzFy55i/jeq9ua398
+p7pn/x998Yb0FlsLbCa0zoZ/fpyKklOcM76eraaUtklumKb5R95UGknLY4kAzAk1
+5ojJuzeZw5cWr/JnnWjeIQKBgE09explmBpPI4kdbMXrADeaxQk/SmHW8iWV3AiC
+Yh76RO5j49PT7XSDAGwjEE8OQbccAsdOib7heFXkXq3eEWvcQYjHh3tOkxjtzZbi
+4MO2j0a27pslUMEAyPStB4TSP6eByrSKuxruv38h4yqXB2Djn3RP0M/EF4axvZfp
+HUk7AoGAL2OaOtwy5lk/Oc6bwuPjTAR0wmBX9zelgsLIPiON2jHY287syVzh7lPm
+vQGRYZlbGMseXj++s9nQJ24gLTokX2FwGioKvXwFX1ujah7ccJR9iVEwKpQMtDY5
+cTiUZkme5oO3Idw6IO115A2EB1/BPpoWBP0M+y2BQYuTGk8F2LU=
+-----END RSA PRIVATE KEY-----`
+
+	public := `-----BEGIN CERTIFICATE-----
+MIIDIDCCAgigAwIBAgIJAMD7f7Ux92lVMA0GCSqGSIb3DQEBCwUAMD4xCzAJBgNV
+BAYTAkdCMRAwDgYDVQQHEwdkYXNkYXNkMQ0wCwYDVQQKEwRCbGFoMQ4wDAYDVQQD
+EwVhLmIuYzAeFw0xODAxMjUyMzI3MDNaFw0yODAxMjUyMzI3MDNaMD4xCzAJBgNV
+BAYTAkdCMRAwDgYDVQQHEwdkYXNkYXNkMQ0wCwYDVQQKEwRCbGFoMQ4wDAYDVQQD
+EwVhLmIuYzCCASIwDQYJKoZIhvcNAQEhkhdakdhJLUihiQoCggEBAKRD0ZSvsSW0
+H1Hp5fR+JyxJEWERWEewfrRtIyVteBHZUpCN7Omz3vnhrVn9F0sw18zqgLnxEVqy
+socNtXPlGKEwOuIuN0/Z8L5UbcV8XKJPlapqghzAk+Ve3fNgyl5xBBOieS8Jh6OP
+DLGkLAa43shlQPJ+NCQ6DN6gtSJWMRKKqLkX/OXmFmALoC9T0pzE+9X2culVAGnh
+UVUcERHN0RcZCmvRhK2gmgxqe435nazR9QPD557N7pupFrkRyJYnsBYVJnNYE8aE
+Lq1U7UIfxUFYgOlG0LVQnEnGGq46qPXYHLs+0QAQhAZ08e4HJg3gelUe5bjdzBk3
+PILqSTozRGsCAwEAAaMhMB8wHQYDVR0OBBYEFOsQUOxzga482TRQfgcvWsOXHu3k
+MA0GCSqGSIb3DQEBCwUAA4IBAQAOufUIugke4ZHRAXYmgM5cUX1MbBUs5S71u+Ao
+79RfGkDL1kfvPdAoQx1/EoWc7LRIzvbuIZu6BiarU+/Te6mirmjF+dFdCfEka7cY
+ZR5/BvU/+xJNEFDz2bEL0f4LTKnEiloEcUsHAt3vaqRdBGNt3vvpJ5FjyaDXjmpA
+idvAjkqXEbUUBgt0kWuaQU8CDCv5FiGr9XhmK8YnoABCsyALbF+NP41EyUfZzt0Z
+bj25+V9mexgCGRR6HJI9whhz33v51SXjxlAX5vsDiXRhfhLST7MBGamE6nqew2k9
+cMbhPHfTIYYM1ijaqFU/LEXOQ6jTieldVIvC0KVSue7+eQtn
+-----END CERTIFICATE----- `
+
+	for _, certName := range []string{"cert1", "cert2", "cert3"} {
+		cert := tm.NewSslServerKey(certName, "", private, public, "")
+		_, applyErr := cert.Apply()
+		if applyErr != nil {
+			t.Fatalf(applyErr.ErrorText)
+		}
+	}
+
+	return fmt.Sprintf(`
+		resource "vtm_virtual_server" "my_vs" {
+			name = "%s"
+			pool = "discard"
+			port = 80
+			ssl_server_cert_host_mapping {
+				host = "www.testing.com"
+				certificate = "cert1"
+				alt_certificates = ["%s", "%s"]
+			}
+			aptimizer_profile {
+				name = "test"
+				urls = ["%s", "%s"]
+			}
+		}`,
+		name, listVal1, listVal2, setVal1, setVal2,
 	)
 }

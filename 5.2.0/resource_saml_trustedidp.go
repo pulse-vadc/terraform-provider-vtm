@@ -23,52 +23,56 @@ func resourceSamlTrustedidp() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceSamlTrustedidpSchema(),
+	}
+}
 
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
+func getResourceSamlTrustedidpSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-			// Whether or not to add the zlib header when compressing the AuthnRequest
-			"add_zlib_header": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
+		"name": &schema.Schema{
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.NoZeroValues,
+		},
 
-			// The certificate used to verify Assertions signed by the identity
-			//  provider
-			"certificate": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
+		// Whether or not to add the zlib header when compressing the AuthnRequest
+		"add_zlib_header": &schema.Schema{
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  false,
+		},
 
-			// The entity id of the IDP
-			"entity_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
+		// The certificate used to verify Assertions signed by the identity
+		//  provider
+		"certificate": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+		},
 
-			// Whether or not SAML responses will be verified strictly
-			"strict_verify": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  true,
-			},
+		// The entity id of the IDP
+		"entity_id": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+		},
 
-			// The IDP URL to which Authentication Requests should be sent
-			"url": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
+		// Whether or not SAML responses will be verified strictly
+		"strict_verify": &schema.Schema{
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  true,
+		},
+
+		// The IDP URL to which Authentication Requests should be sent
+		"url": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
 		},
 	}
 }
 
-func resourceSamlTrustedidpRead(d *schema.ResourceData, tm interface{}) error {
+func resourceSamlTrustedidpRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	if objectName == "" {
 		objectName = d.Id()
@@ -82,12 +86,26 @@ func resourceSamlTrustedidpRead(d *schema.ResourceData, tm interface{}) error {
 		}
 		return fmt.Errorf("Failed to read vtm_trustedidp '%v': %v", objectName, err.ErrorText)
 	}
-	d.Set("add_zlib_header", bool(*object.Basic.AddZlibHeader))
-	d.Set("certificate", string(*object.Basic.Certificate))
-	d.Set("entity_id", string(*object.Basic.EntityId))
-	d.Set("strict_verify", bool(*object.Basic.StrictVerify))
-	d.Set("url", string(*object.Basic.Url))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "add_zlib_header"
+	d.Set("add_zlib_header", bool(*object.Basic.AddZlibHeader))
+	lastAssignedField = "certificate"
+	d.Set("certificate", string(*object.Basic.Certificate))
+	lastAssignedField = "entity_id"
+	d.Set("entity_id", string(*object.Basic.EntityId))
+	lastAssignedField = "strict_verify"
+	d.Set("strict_verify", bool(*object.Basic.StrictVerify))
+	lastAssignedField = "url"
+	d.Set("url", string(*object.Basic.Url))
 	d.SetId(objectName)
 	return nil
 }
@@ -110,13 +128,12 @@ func resourceSamlTrustedidpExists(d *schema.ResourceData, tm interface{}) (bool,
 func resourceSamlTrustedidpCreate(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
 	object := tm.(*vtm.VirtualTrafficManager).NewSamlTrustedidp(objectName, d.Get("certificate").(string), d.Get("entity_id").(string), d.Get("url").(string))
-	setBool(&object.Basic.AddZlibHeader, d, "add_zlib_header")
-	setString(&object.Basic.Certificate, d, "certificate")
-	setString(&object.Basic.EntityId, d, "entity_id")
-	setBool(&object.Basic.StrictVerify, d, "strict_verify")
-	setString(&object.Basic.Url, d, "url")
-
-	object.Apply()
+	resourceSamlTrustedidpObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error creating vtm_trustedidp '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
 	d.SetId(objectName)
 	return nil
 }
@@ -127,15 +144,22 @@ func resourceSamlTrustedidpUpdate(d *schema.ResourceData, tm interface{}) error 
 	if err != nil {
 		return fmt.Errorf("Failed to update vtm_trustedidp '%v': %v", objectName, err)
 	}
+	resourceSamlTrustedidpObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error updating vtm_trustedidp '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
+	d.SetId(objectName)
+	return nil
+}
+
+func resourceSamlTrustedidpObjectFieldAssignments(d *schema.ResourceData, object *vtm.SamlTrustedidp) {
 	setBool(&object.Basic.AddZlibHeader, d, "add_zlib_header")
 	setString(&object.Basic.Certificate, d, "certificate")
 	setString(&object.Basic.EntityId, d, "entity_id")
 	setBool(&object.Basic.StrictVerify, d, "strict_verify")
 	setString(&object.Basic.Url, d, "url")
-
-	object.Apply()
-	d.SetId(objectName)
-	return nil
 }
 
 func resourceSamlTrustedidpDelete(d *schema.ResourceData, tm interface{}) error {

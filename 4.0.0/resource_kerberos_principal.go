@@ -23,55 +23,59 @@ func resourceKerberosPrincipal() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceKerberosPrincipalSchema(),
+	}
+}
 
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
+func getResourceKerberosPrincipalSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-			// A list of "<hostname/ip>:<port>" pairs for Kerberos key distribution
-			//  center (KDC) services to be explicitly used for the realm of
-			//  the principal.  If no KDCs are explicitly configured, DNS will
-			//  be used to discover the KDC(s) to use.
-			"kdcs": &schema.Schema{
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
+		"name": &schema.Schema{
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.NoZeroValues,
+		},
 
-			// The name of the Kerberos keytab file containing suitable credentials
-			//  to authenticate as the specified Kerberos principal.
-			"keytab": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
+		// A list of "<hostname/ip>:<port>" pairs for Kerberos key distribution
+		//  center (KDC) services to be explicitly used for the realm of
+		//  the principal.  If no KDCs are explicitly configured, DNS will
+		//  be used to discover the KDC(s) to use.
+		"kdcs": &schema.Schema{
+			Type:     schema.TypeList,
+			Optional: true,
+			Elem:     &schema.Schema{Type: schema.TypeString},
+		},
 
-			// The name of an optional Kerberos configuration file (krb5.conf).
-			"krb5conf": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		// The name of the Kerberos keytab file containing suitable credentials
+		//  to authenticate as the specified Kerberos principal.
+		"keytab": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+		},
 
-			// The Kerberos realm where the principal belongs.
-			"realm": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		// The name of an optional Kerberos configuration file (krb5.conf).
+		"krb5conf": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// The service name part of the Kerberos principal name the traffic
-			//  manager should use to authenticate itself.
-			"service": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
+		// The Kerberos realm where the principal belongs.
+		"realm": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+
+		// The service name part of the Kerberos principal name the traffic
+		//  manager should use to authenticate itself.
+		"service": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
 		},
 	}
 }
 
-func resourceKerberosPrincipalRead(d *schema.ResourceData, tm interface{}) error {
+func resourceKerberosPrincipalRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	if objectName == "" {
 		objectName = d.Id()
@@ -85,12 +89,26 @@ func resourceKerberosPrincipalRead(d *schema.ResourceData, tm interface{}) error
 		}
 		return fmt.Errorf("Failed to read vtm_principal '%v': %v", objectName, err.ErrorText)
 	}
-	d.Set("kdcs", []string(*object.Basic.Kdcs))
-	d.Set("keytab", string(*object.Basic.Keytab))
-	d.Set("krb5conf", string(*object.Basic.Krb5Conf))
-	d.Set("realm", string(*object.Basic.Realm))
-	d.Set("service", string(*object.Basic.Service))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "kdcs"
+	d.Set("kdcs", []string(*object.Basic.Kdcs))
+	lastAssignedField = "keytab"
+	d.Set("keytab", string(*object.Basic.Keytab))
+	lastAssignedField = "krb5conf"
+	d.Set("krb5conf", string(*object.Basic.Krb5Conf))
+	lastAssignedField = "realm"
+	d.Set("realm", string(*object.Basic.Realm))
+	lastAssignedField = "service"
+	d.Set("service", string(*object.Basic.Service))
 	d.SetId(objectName)
 	return nil
 }
@@ -113,19 +131,12 @@ func resourceKerberosPrincipalExists(d *schema.ResourceData, tm interface{}) (bo
 func resourceKerberosPrincipalCreate(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
 	object := tm.(*vtm.VirtualTrafficManager).NewKerberosPrincipal(objectName, d.Get("keytab").(string), d.Get("service").(string))
-
-	if _, ok := d.GetOk("kdcs"); ok {
-		setStringList(&object.Basic.Kdcs, d, "kdcs")
-	} else {
-		object.Basic.Kdcs = &[]string{}
-		d.Set("kdcs", []string(*object.Basic.Kdcs))
+	resourceKerberosPrincipalObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error creating vtm_principal '%s': %s %s", objectName, applyErr.ErrorText, info)
 	}
-	setString(&object.Basic.Keytab, d, "keytab")
-	setString(&object.Basic.Krb5Conf, d, "krb5conf")
-	setString(&object.Basic.Realm, d, "realm")
-	setString(&object.Basic.Service, d, "service")
-
-	object.Apply()
 	d.SetId(objectName)
 	return nil
 }
@@ -136,6 +147,17 @@ func resourceKerberosPrincipalUpdate(d *schema.ResourceData, tm interface{}) err
 	if err != nil {
 		return fmt.Errorf("Failed to update vtm_principal '%v': %v", objectName, err)
 	}
+	resourceKerberosPrincipalObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error updating vtm_principal '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
+	d.SetId(objectName)
+	return nil
+}
+
+func resourceKerberosPrincipalObjectFieldAssignments(d *schema.ResourceData, object *vtm.KerberosPrincipal) {
 
 	if _, ok := d.GetOk("kdcs"); ok {
 		setStringList(&object.Basic.Kdcs, d, "kdcs")
@@ -147,10 +169,6 @@ func resourceKerberosPrincipalUpdate(d *schema.ResourceData, tm interface{}) err
 	setString(&object.Basic.Krb5Conf, d, "krb5conf")
 	setString(&object.Basic.Realm, d, "realm")
 	setString(&object.Basic.Service, d, "service")
-
-	object.Apply()
-	d.SetId(objectName)
-	return nil
 }
 
 func resourceKerberosPrincipalDelete(d *schema.ResourceData, tm interface{}) error {

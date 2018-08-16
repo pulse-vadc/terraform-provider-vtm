@@ -57,7 +57,7 @@ func dataSourceBandwidthStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceBandwidthStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceBandwidthStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetBandwidthStatistics(objectName)
 	if err != nil {
@@ -67,10 +67,29 @@ func dataSourceBandwidthStatisticsRead(d *schema.ResourceData, tm interface{}) e
 		}
 		return fmt.Errorf("Failed to read vtm_bandwidth '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "bytes_drop"
 	d.Set("bytes_drop", int(*object.Statistics.BytesDrop))
+
+	lastAssignedField = "bytes_out"
 	d.Set("bytes_out", int(*object.Statistics.BytesOut))
+
+	lastAssignedField = "guarantee"
 	d.Set("guarantee", int(*object.Statistics.Guarantee))
+
+	lastAssignedField = "maximum"
 	d.Set("maximum", int(*object.Statistics.Maximum))
+
+	lastAssignedField = "pkts_drop"
 	d.Set("pkts_drop", int(*object.Statistics.PktsDrop))
 	d.SetId(objectName)
 	return nil

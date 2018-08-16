@@ -3,71 +3,15 @@
 
 package main
 
-import (
-	"fmt"
-
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/helper/validation"
-	vtm "github.com/pulse-vadc/go-vtm/5.2"
-)
+import "github.com/hashicorp/terraform/helper/schema"
 
 func dataSourceBandwidth() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceBandwidthRead,
-
-		Schema: map[string]*schema.Schema{
-
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
-
-			// The maximum bandwidth to allocate to connections that are associated
-			//  with this bandwidth class (in kbits/second).
-			"maximum": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(1, 20000000),
-				Default:      10000,
-			},
-
-			// A description of this bandwidth class.
-			"note": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-
-			// The scope of the bandwidth class.
-			"sharing": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cluster", "connection", "machine"}, false),
-				Default:      "cluster",
-			},
-		},
+		Read:   dataSourceBandwidthRead,
+		Schema: setAllNotRequired(getResourceBandwidthSchema()),
 	}
 }
 
 func dataSourceBandwidthRead(d *schema.ResourceData, tm interface{}) error {
-	objectName := d.Get("name").(string)
-	if objectName == "" {
-		objectName = d.Id()
-		d.Set("name", objectName)
-	}
-	object, err := tm.(*vtm.VirtualTrafficManager).GetBandwidth(objectName)
-	if err != nil {
-		if err.ErrorId == "resource.not_found" {
-			d.SetId("")
-			return nil
-		}
-		return fmt.Errorf("Failed to read vtm_bandwidth '%v': %v", objectName, err.ErrorText)
-	}
-	d.Set("maximum", int(*object.Basic.Maximum))
-	d.Set("note", string(*object.Basic.Note))
-	d.Set("sharing", string(*object.Basic.Sharing))
-
-	d.SetId(objectName)
-	return nil
+	return resourceBandwidthRead(d, tm)
 }

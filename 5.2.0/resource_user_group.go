@@ -24,75 +24,79 @@ func resourceUserGroup() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceUserGroupSchema(),
+	}
+}
 
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
+func getResourceUserGroupSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-			// A description for the group.
-			"description": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		"name": &schema.Schema{
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.NoZeroValues,
+		},
 
-			// Members of this group must renew their passwords after this number
-			//  of days. To disable password expiry for the group set this to
-			//  "0" (zero). Note that this setting applies only to local users.
-			"password_expire_time": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 65535),
-				Default:      0,
-			},
+		// A description for the group.
+		"description": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// A table defining which level of permission this group has for
-			//  specific configuration elements.
-			"permissions": &schema.Schema{
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
+		// Members of this group must renew their passwords after this number
+		//  of days. To disable password expiry for the group set this to
+		//  "0" (zero). Note that this setting applies only to local users.
+		"password_expire_time": &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntBetween(0, 65535),
+			Default:      0,
+		},
 
-						// access_level
-						"access_level": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+		// A table defining which level of permission this group has for
+		//  specific configuration elements.
+		"permissions": &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
 
-						// name
-						"name": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+					// access_level
+					"access_level": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
+
+					// name
+					"name": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
 					},
 				},
 			},
+		},
 
-			// JSON representation of permissions
-			"permissions_json": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateJsonString,
-			},
+		// JSON representation of permissions
+		"permissions_json": &schema.Schema{
+			Type:         schema.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.ValidateJsonString,
+		},
 
-			// Inactive UI sessions will timeout after this number of seconds.
-			//  To disable inactivity timeouts for the group set this to "0"
-			//  (zero).
-			"timeout": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 999999),
-				Default:      30,
-			},
+		// Inactive UI sessions will timeout after this number of seconds.
+		//  To disable inactivity timeouts for the group set this to "0"
+		//  (zero).
+		"timeout": &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntBetween(0, 999999),
+			Default:      30,
 		},
 	}
 }
 
-func resourceUserGroupRead(d *schema.ResourceData, tm interface{}) error {
+func resourceUserGroupRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	if objectName == "" {
 		objectName = d.Id()
@@ -106,9 +110,21 @@ func resourceUserGroupRead(d *schema.ResourceData, tm interface{}) error {
 		}
 		return fmt.Errorf("Failed to read vtm_user_group '%v': %v", objectName, err.ErrorText)
 	}
-	d.Set("description", string(*object.Basic.Description))
-	d.Set("password_expire_time", int(*object.Basic.PasswordExpireTime))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "description"
+	d.Set("description", string(*object.Basic.Description))
+	lastAssignedField = "password_expire_time"
+	d.Set("password_expire_time", int(*object.Basic.PasswordExpireTime))
+	lastAssignedField = "permissions"
 	permissions := make([]map[string]interface{}, 0, len(*object.Basic.Permissions))
 	for _, item := range *object.Basic.Permissions {
 		itemTerraform := make(map[string]interface{})
@@ -123,8 +139,8 @@ func resourceUserGroupRead(d *schema.ResourceData, tm interface{}) error {
 	d.Set("permissions", permissions)
 	permissionsJson, _ := json.Marshal(permissions)
 	d.Set("permissions_json", permissionsJson)
+	lastAssignedField = "timeout"
 	d.Set("timeout", int(*object.Basic.Timeout))
-
 	d.SetId(objectName)
 	return nil
 }
@@ -147,27 +163,12 @@ func resourceUserGroupExists(d *schema.ResourceData, tm interface{}) (bool, erro
 func resourceUserGroupCreate(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
 	object := tm.(*vtm.VirtualTrafficManager).NewUserGroup(objectName)
-	setString(&object.Basic.Description, d, "description")
-	setInt(&object.Basic.PasswordExpireTime, d, "password_expire_time")
-	setInt(&object.Basic.Timeout, d, "timeout")
-
-	object.Basic.Permissions = &vtm.UserGroupPermissionsTable{}
-	if permissionsJson, ok := d.GetOk("permissions_json"); ok {
-		_ = json.Unmarshal([]byte(permissionsJson.(string)), object.Basic.Permissions)
-	} else if permissions, ok := d.GetOk("permissions"); ok {
-		for _, row := range permissions.(*schema.Set).List() { // VTM-37687: permissions.([]interface{}) {
-			itemTerraform := row.(map[string]interface{})
-			VtmObject := vtm.UserGroupPermissions{}
-			VtmObject.AccessLevel = getStringAddr(itemTerraform["access_level"].(string))
-			VtmObject.Name = getStringAddr(itemTerraform["name"].(string))
-			*object.Basic.Permissions = append(*object.Basic.Permissions, VtmObject)
-		}
-		d.Set("permissions", permissions)
-	} else {
-		d.Set("permissions", make([]map[string]interface{}, 0, len(*object.Basic.Permissions)))
+	resourceUserGroupObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error creating vtm_user_group '%s': %s %s", objectName, applyErr.ErrorText, info)
 	}
-
-	object.Apply()
 	d.SetId(objectName)
 	return nil
 }
@@ -178,6 +179,17 @@ func resourceUserGroupUpdate(d *schema.ResourceData, tm interface{}) error {
 	if err != nil {
 		return fmt.Errorf("Failed to update vtm_user_group '%v': %v", objectName, err)
 	}
+	resourceUserGroupObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error updating vtm_user_group '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
+	d.SetId(objectName)
+	return nil
+}
+
+func resourceUserGroupObjectFieldAssignments(d *schema.ResourceData, object *vtm.UserGroup) {
 	setString(&object.Basic.Description, d, "description")
 	setInt(&object.Basic.PasswordExpireTime, d, "password_expire_time")
 	setInt(&object.Basic.Timeout, d, "timeout")
@@ -186,7 +198,7 @@ func resourceUserGroupUpdate(d *schema.ResourceData, tm interface{}) error {
 	if permissionsJson, ok := d.GetOk("permissions_json"); ok {
 		_ = json.Unmarshal([]byte(permissionsJson.(string)), object.Basic.Permissions)
 	} else if permissions, ok := d.GetOk("permissions"); ok {
-		for _, row := range permissions.(*schema.Set).List() { // VTM-37687: permissions.([]interface{}) {
+		for _, row := range permissions.(*schema.Set).List() {
 			itemTerraform := row.(map[string]interface{})
 			VtmObject := vtm.UserGroupPermissions{}
 			VtmObject.AccessLevel = getStringAddr(itemTerraform["access_level"].(string))
@@ -197,10 +209,6 @@ func resourceUserGroupUpdate(d *schema.ResourceData, tm interface{}) error {
 	} else {
 		d.Set("permissions", make([]map[string]interface{}, 0, len(*object.Basic.Permissions)))
 	}
-
-	object.Apply()
-	d.SetId(objectName)
-	return nil
 }
 
 func resourceUserGroupDelete(d *schema.ResourceData, tm interface{}) error {

@@ -24,93 +24,97 @@ func resourceLogExport() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceLogExportSchema(),
+	}
+}
 
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
+func getResourceLogExportSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-			// Whether entries from the specified log files should be exported
-			//  only from appliances.
-			"appliance_only": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
+		"name": &schema.Schema{
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.NoZeroValues,
+		},
 
-			// Export entries from the log files included in this category.
-			"enabled": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
+		// Whether entries from the specified log files should be exported
+		//  only from appliances.
+		"appliance_only": &schema.Schema{
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  false,
+		},
 
-			// The set of files to export as part of this category, specified
-			//  as a list of glob patterns.
-			"files": &schema.Schema{
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
+		// Export entries from the log files included in this category.
+		"enabled": &schema.Schema{
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  false,
+		},
 
-			// How much historic log activity should be exported.
-			"history": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"all", "none", "recent"}, false),
-				Default:      "none",
-			},
+		// The set of files to export as part of this category, specified
+		//  as a list of glob patterns.
+		"files": &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			Elem:     &schema.Schema{Type: schema.TypeString},
+		},
 
-			// The number of days of historic log entries that should be exported.
-			"history_period": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntAtLeast(0),
-				Default:      10,
-			},
+		// How much historic log activity should be exported.
+		"history": &schema.Schema{
+			Type:         schema.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice([]string{"all", "none", "recent"}, false),
+			Default:      "none",
+		},
 
-			// This is table 'metadata'
-			"metadata": &schema.Schema{
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
+		// The number of days of historic log entries that should be exported.
+		"history_period": &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntAtLeast(0),
+			Default:      10,
+		},
 
-						// name
-						"name": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+		// This is table 'metadata'
+		"metadata": &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
 
-						// value
-						"value": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
+					// name
+					"name": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
+
+					// value
+					"value": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
 					},
 				},
 			},
+		},
 
-			// JSON representation of metadata
-			"metadata_json": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateJsonString,
-			},
+		// JSON representation of metadata
+		"metadata_json": &schema.Schema{
+			Type:         schema.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.ValidateJsonString,
+		},
 
-			// A description of this category of log files.
-			"note": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		// A description of this category of log files.
+		"note": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
 		},
 	}
 }
 
-func resourceLogExportRead(d *schema.ResourceData, tm interface{}) error {
+func resourceLogExportRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	if objectName == "" {
 		objectName = d.Id()
@@ -124,12 +128,27 @@ func resourceLogExportRead(d *schema.ResourceData, tm interface{}) error {
 		}
 		return fmt.Errorf("Failed to read vtm_log_export '%v': %v", objectName, err.ErrorText)
 	}
-	d.Set("appliance_only", bool(*object.Basic.ApplianceOnly))
-	d.Set("enabled", bool(*object.Basic.Enabled))
-	d.Set("files", []string(*object.Basic.Files))
-	d.Set("history", string(*object.Basic.History))
-	d.Set("history_period", int(*object.Basic.HistoryPeriod))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "appliance_only"
+	d.Set("appliance_only", bool(*object.Basic.ApplianceOnly))
+	lastAssignedField = "enabled"
+	d.Set("enabled", bool(*object.Basic.Enabled))
+	lastAssignedField = "files"
+	d.Set("files", []string(*object.Basic.Files))
+	lastAssignedField = "history"
+	d.Set("history", string(*object.Basic.History))
+	lastAssignedField = "history_period"
+	d.Set("history_period", int(*object.Basic.HistoryPeriod))
+	lastAssignedField = "metadata"
 	metadata := make([]map[string]interface{}, 0, len(*object.Basic.Metadata))
 	for _, item := range *object.Basic.Metadata {
 		itemTerraform := make(map[string]interface{})
@@ -144,8 +163,8 @@ func resourceLogExportRead(d *schema.ResourceData, tm interface{}) error {
 	d.Set("metadata", metadata)
 	metadataJson, _ := json.Marshal(metadata)
 	d.Set("metadata_json", metadataJson)
+	lastAssignedField = "note"
 	d.Set("note", string(*object.Basic.Note))
-
 	d.SetId(objectName)
 	return nil
 }
@@ -168,36 +187,12 @@ func resourceLogExportExists(d *schema.ResourceData, tm interface{}) (bool, erro
 func resourceLogExportCreate(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
 	object := tm.(*vtm.VirtualTrafficManager).NewLogExport(objectName)
-	setBool(&object.Basic.ApplianceOnly, d, "appliance_only")
-	setBool(&object.Basic.Enabled, d, "enabled")
-
-	if _, ok := d.GetOk("files"); ok {
-		setStringList(&object.Basic.Files, d, "files")
-	} else {
-		object.Basic.Files = &[]string{}
-		d.Set("files", []string(*object.Basic.Files))
+	resourceLogExportObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error creating vtm_log_export '%s': %s %s", objectName, applyErr.ErrorText, info)
 	}
-	setString(&object.Basic.History, d, "history")
-	setInt(&object.Basic.HistoryPeriod, d, "history_period")
-	setString(&object.Basic.Note, d, "note")
-
-	object.Basic.Metadata = &vtm.LogExportMetadataTable{}
-	if metadataJson, ok := d.GetOk("metadata_json"); ok {
-		_ = json.Unmarshal([]byte(metadataJson.(string)), object.Basic.Metadata)
-	} else if metadata, ok := d.GetOk("metadata"); ok {
-		for _, row := range metadata.(*schema.Set).List() { // VTM-37687: metadata.([]interface{}) {
-			itemTerraform := row.(map[string]interface{})
-			VtmObject := vtm.LogExportMetadata{}
-			VtmObject.Name = getStringAddr(itemTerraform["name"].(string))
-			VtmObject.Value = getStringAddr(itemTerraform["value"].(string))
-			*object.Basic.Metadata = append(*object.Basic.Metadata, VtmObject)
-		}
-		d.Set("metadata", metadata)
-	} else {
-		d.Set("metadata", make([]map[string]interface{}, 0, len(*object.Basic.Metadata)))
-	}
-
-	object.Apply()
 	d.SetId(objectName)
 	return nil
 }
@@ -208,11 +203,22 @@ func resourceLogExportUpdate(d *schema.ResourceData, tm interface{}) error {
 	if err != nil {
 		return fmt.Errorf("Failed to update vtm_log_export '%v': %v", objectName, err)
 	}
+	resourceLogExportObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error updating vtm_log_export '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
+	d.SetId(objectName)
+	return nil
+}
+
+func resourceLogExportObjectFieldAssignments(d *schema.ResourceData, object *vtm.LogExport) {
 	setBool(&object.Basic.ApplianceOnly, d, "appliance_only")
 	setBool(&object.Basic.Enabled, d, "enabled")
 
 	if _, ok := d.GetOk("files"); ok {
-		setStringList(&object.Basic.Files, d, "files")
+		setStringSet(&object.Basic.Files, d, "files")
 	} else {
 		object.Basic.Files = &[]string{}
 		d.Set("files", []string(*object.Basic.Files))
@@ -225,7 +231,7 @@ func resourceLogExportUpdate(d *schema.ResourceData, tm interface{}) error {
 	if metadataJson, ok := d.GetOk("metadata_json"); ok {
 		_ = json.Unmarshal([]byte(metadataJson.(string)), object.Basic.Metadata)
 	} else if metadata, ok := d.GetOk("metadata"); ok {
-		for _, row := range metadata.(*schema.Set).List() { // VTM-37687: metadata.([]interface{}) {
+		for _, row := range metadata.(*schema.Set).List() {
 			itemTerraform := row.(map[string]interface{})
 			VtmObject := vtm.LogExportMetadata{}
 			VtmObject.Name = getStringAddr(itemTerraform["name"].(string))
@@ -236,10 +242,6 @@ func resourceLogExportUpdate(d *schema.ResourceData, tm interface{}) error {
 	} else {
 		d.Set("metadata", make([]map[string]interface{}, 0, len(*object.Basic.Metadata)))
 	}
-
-	object.Apply()
-	d.SetId(objectName)
-	return nil
 }
 
 func resourceLogExportDelete(d *schema.ResourceData, tm interface{}) error {

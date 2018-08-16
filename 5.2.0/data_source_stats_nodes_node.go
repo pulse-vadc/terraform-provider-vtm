@@ -102,7 +102,7 @@ func dataSourceNodesNodeStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceNodesNodeStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceNodesNodeStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetNodesNodeStatistics(objectName)
 	if err != nil {
@@ -112,17 +112,50 @@ func dataSourceNodesNodeStatisticsRead(d *schema.ResourceData, tm interface{}) e
 		}
 		return fmt.Errorf("Failed to read vtm_node '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "current_conn"
 	d.Set("current_conn", int(*object.Statistics.CurrentConn))
+
+	lastAssignedField = "current_requests"
 	d.Set("current_requests", int(*object.Statistics.CurrentRequests))
+
+	lastAssignedField = "errors"
 	d.Set("errors", int(*object.Statistics.Errors))
+
+	lastAssignedField = "failures"
 	d.Set("failures", int(*object.Statistics.Failures))
+
+	lastAssignedField = "new_conn"
 	d.Set("new_conn", int(*object.Statistics.NewConn))
+
+	lastAssignedField = "pooled_conn"
 	d.Set("pooled_conn", int(*object.Statistics.PooledConn))
+
+	lastAssignedField = "port"
 	d.Set("port", int(*object.Statistics.Port))
+
+	lastAssignedField = "response_max"
 	d.Set("response_max", int(*object.Statistics.ResponseMax))
+
+	lastAssignedField = "response_mean"
 	d.Set("response_mean", int(*object.Statistics.ResponseMean))
+
+	lastAssignedField = "response_min"
 	d.Set("response_min", int(*object.Statistics.ResponseMin))
+
+	lastAssignedField = "state"
 	d.Set("state", string(*object.Statistics.State))
+
+	lastAssignedField = "total_conn"
 	d.Set("total_conn", int(*object.Statistics.TotalConn))
 	d.SetId(objectName)
 	return nil

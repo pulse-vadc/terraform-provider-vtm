@@ -25,11 +25,22 @@ func dataSourceExtrasUserCounters64Statistics() *schema.Resource {
 	}
 }
 
-func dataSourceExtrasUserCounters64StatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceExtrasUserCounters64StatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	object, err := tm.(*vtm.VirtualTrafficManager).GetExtrasUserCounters64Statistics()
 	if err != nil {
 		return fmt.Errorf("Failed to read vtm_user_counters_64: %v", err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "counter"
 	d.Set("counter", int(*object.Statistics.Counter))
 	d.SetId("user_counters_64")
 	return nil

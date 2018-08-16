@@ -13,7 +13,6 @@ import (
 func dataSourceSystemInformation() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceSystemInformationRead,
-
 		Schema: map[string]*schema.Schema{
 
 			// Version number of the Traffic Manager instance.
@@ -31,14 +30,25 @@ func dataSourceSystemInformation() *schema.Resource {
 	}
 }
 
-func dataSourceSystemInformationRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceSystemInformationRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	object, err := tm.(*vtm.VirtualTrafficManager).GetSystemInformation()
 	if err != nil {
 		return fmt.Errorf("Failed to read vtm_information: %v", err.ErrorText)
 	}
-	d.Set("information_tm_version", string(*object.Information.TmVersion))
-	d.Set("information_uuid", string(*object.Information.Uuid))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "information_tm_version"
+	d.Set("information_tm_version", string(*object.Information.TmVersion))
+	lastAssignedField = "information_uuid"
+	d.Set("information_uuid", string(*object.Information.Uuid))
 	d.SetId("information")
 	return nil
 }

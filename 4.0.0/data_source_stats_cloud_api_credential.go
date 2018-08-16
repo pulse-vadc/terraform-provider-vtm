@@ -48,7 +48,7 @@ func dataSourceCloudApiCredentialStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceCloudApiCredentialStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceCloudApiCredentialStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetCloudApiCredentialStatistics(objectName)
 	if err != nil {
@@ -58,8 +58,23 @@ func dataSourceCloudApiCredentialStatisticsRead(d *schema.ResourceData, tm inter
 		}
 		return fmt.Errorf("Failed to read vtm_cloud_api_credentials '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "node_creations"
 	d.Set("node_creations", int(*object.Statistics.NodeCreations))
+
+	lastAssignedField = "node_deletions"
 	d.Set("node_deletions", int(*object.Statistics.NodeDeletions))
+
+	lastAssignedField = "status_requests"
 	d.Set("status_requests", int(*object.Statistics.StatusRequests))
 	d.SetId(objectName)
 	return nil

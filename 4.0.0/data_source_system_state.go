@@ -15,7 +15,6 @@ import (
 func dataSourceSystemState() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceSystemStateRead,
-
 		Schema: map[string]*schema.Schema{
 
 			// Whether or not the traffic manager is capable of running in Data
@@ -60,7 +59,7 @@ func dataSourceSystemState() *schema.Resource {
 
 			// List of configuration errors for the traffic manager
 			"state_errors": &schema.Schema{
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
@@ -80,7 +79,7 @@ func dataSourceSystemState() *schema.Resource {
 
 						// pools
 						"pools": &schema.Schema{
-							Type:     schema.TypeList,
+							Type:     schema.TypeSet,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							Default:  nil,
@@ -104,7 +103,7 @@ func dataSourceSystemState() *schema.Resource {
 
 						// active_nodes
 						"active_nodes": &schema.Schema{
-							Type:     schema.TypeList,
+							Type:     schema.TypeSet,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							Default:  nil,
@@ -112,7 +111,7 @@ func dataSourceSystemState() *schema.Resource {
 
 						// disabled_nodes
 						"disabled_nodes": &schema.Schema{
-							Type:     schema.TypeList,
+							Type:     schema.TypeSet,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							Default:  nil,
@@ -120,7 +119,7 @@ func dataSourceSystemState() *schema.Resource {
 
 						// draining_nodes
 						"draining_nodes": &schema.Schema{
-							Type:     schema.TypeList,
+							Type:     schema.TypeSet,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							Default:  nil,
@@ -143,7 +142,7 @@ func dataSourceSystemState() *schema.Resource {
 
 			// List of traffic IP errors for the traffic manager
 			"state_tip_errors": &schema.Schema{
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
@@ -184,7 +183,7 @@ func dataSourceSystemState() *schema.Resource {
 
 						// ts_redirect_pools
 						"ts_redirect_pools": &schema.Schema{
-							Type:     schema.TypeList,
+							Type:     schema.TypeSet,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							Default:  nil,
@@ -196,18 +195,34 @@ func dataSourceSystemState() *schema.Resource {
 	}
 }
 
-func dataSourceSystemStateRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceSystemStateRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	object, err := tm.(*vtm.VirtualTrafficManager).GetSystemState()
 	if err != nil {
 		return fmt.Errorf("Failed to read vtm_state: %v", err.ErrorText)
 	}
-	d.Set("data_plane_acceleration_capable", bool(*object.DataPlaneAcceleration.Capable))
-	d.Set("data_plane_acceleration_configured", bool(*object.DataPlaneAcceleration.Configured))
-	d.Set("data_plane_acceleration_failed_to_start", bool(*object.DataPlaneAcceleration.FailedToStart))
-	d.Set("data_plane_acceleration_running", bool(*object.DataPlaneAcceleration.Running))
-	d.Set("state_error_level", string(*object.State.ErrorLevel))
-	d.Set("state_errors", []string(*object.State.Errors))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "data_plane_acceleration_capable"
+	d.Set("data_plane_acceleration_capable", bool(*object.DataPlaneAcceleration.Capable))
+	lastAssignedField = "data_plane_acceleration_configured"
+	d.Set("data_plane_acceleration_configured", bool(*object.DataPlaneAcceleration.Configured))
+	lastAssignedField = "data_plane_acceleration_failed_to_start"
+	d.Set("data_plane_acceleration_failed_to_start", bool(*object.DataPlaneAcceleration.FailedToStart))
+	lastAssignedField = "data_plane_acceleration_running"
+	d.Set("data_plane_acceleration_running", bool(*object.DataPlaneAcceleration.Running))
+	lastAssignedField = "state_error_level"
+	d.Set("state_error_level", string(*object.State.ErrorLevel))
+	lastAssignedField = "state_errors"
+	d.Set("state_errors", []string(*object.State.Errors))
+	lastAssignedField = "state_failed_nodes"
 	stateFailedNodes := make([]map[string]interface{}, 0, len(*object.State.FailedNodes))
 	for _, item := range *object.State.FailedNodes {
 		itemTerraform := make(map[string]interface{})
@@ -222,8 +237,9 @@ func dataSourceSystemStateRead(d *schema.ResourceData, tm interface{}) error {
 	d.Set("state_failed_nodes", stateFailedNodes)
 	stateFailedNodesJson, _ := json.Marshal(stateFailedNodes)
 	d.Set("state_failed_nodes_json", stateFailedNodesJson)
+	lastAssignedField = "state_license"
 	d.Set("state_license", string(*object.State.License))
-
+	lastAssignedField = "state_pools"
 	statePools := make([]map[string]interface{}, 0, len(*object.State.Pools))
 	for _, item := range *object.State.Pools {
 		itemTerraform := make(map[string]interface{})
@@ -247,8 +263,9 @@ func dataSourceSystemStateRead(d *schema.ResourceData, tm interface{}) error {
 	d.Set("state_pools", statePools)
 	statePoolsJson, _ := json.Marshal(statePools)
 	d.Set("state_pools_json", statePoolsJson)
+	lastAssignedField = "state_tip_errors"
 	d.Set("state_tip_errors", []string(*object.State.TipErrors))
-
+	lastAssignedField = "state_virtual_servers"
 	stateVirtualServers := make([]map[string]interface{}, 0, len(*object.State.VirtualServers))
 	for _, item := range *object.State.VirtualServers {
 		itemTerraform := make(map[string]interface{})
@@ -272,7 +289,6 @@ func dataSourceSystemStateRead(d *schema.ResourceData, tm interface{}) error {
 	d.Set("state_virtual_servers", stateVirtualServers)
 	stateVirtualServersJson, _ := json.Marshal(stateVirtualServers)
 	d.Set("state_virtual_servers_json", stateVirtualServersJson)
-
 	d.SetId("state")
 	return nil
 }

@@ -23,31 +23,35 @@ func resourceDnsServerZone() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceDnsServerZoneSchema(),
+	}
+}
 
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
+func getResourceDnsServerZoneSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-			// The domain origin of this Zone.
-			"origin": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
+		"name": &schema.Schema{
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.NoZeroValues,
+		},
 
-			// The Zone File encapsulated by this Zone.
-			"zonefile": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
+		// The domain origin of this Zone.
+		"origin": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+		},
+
+		// The Zone File encapsulated by this Zone.
+		"zonefile": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
 		},
 	}
 }
 
-func resourceDnsServerZoneRead(d *schema.ResourceData, tm interface{}) error {
+func resourceDnsServerZoneRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	if objectName == "" {
 		objectName = d.Id()
@@ -61,9 +65,20 @@ func resourceDnsServerZoneRead(d *schema.ResourceData, tm interface{}) error {
 		}
 		return fmt.Errorf("Failed to read vtm_zone '%v': %v", objectName, err.ErrorText)
 	}
-	d.Set("origin", string(*object.Basic.Origin))
-	d.Set("zonefile", string(*object.Basic.Zonefile))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "origin"
+	d.Set("origin", string(*object.Basic.Origin))
+	lastAssignedField = "zonefile"
+	d.Set("zonefile", string(*object.Basic.Zonefile))
 	d.SetId(objectName)
 	return nil
 }
@@ -86,10 +101,12 @@ func resourceDnsServerZoneExists(d *schema.ResourceData, tm interface{}) (bool, 
 func resourceDnsServerZoneCreate(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
 	object := tm.(*vtm.VirtualTrafficManager).NewDnsServerZone(objectName, d.Get("origin").(string), d.Get("zonefile").(string))
-	setString(&object.Basic.Origin, d, "origin")
-	setString(&object.Basic.Zonefile, d, "zonefile")
-
-	object.Apply()
+	resourceDnsServerZoneObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error creating vtm_zone '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
 	d.SetId(objectName)
 	return nil
 }
@@ -100,12 +117,19 @@ func resourceDnsServerZoneUpdate(d *schema.ResourceData, tm interface{}) error {
 	if err != nil {
 		return fmt.Errorf("Failed to update vtm_zone '%v': %v", objectName, err)
 	}
-	setString(&object.Basic.Origin, d, "origin")
-	setString(&object.Basic.Zonefile, d, "zonefile")
-
-	object.Apply()
+	resourceDnsServerZoneObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error updating vtm_zone '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
 	d.SetId(objectName)
 	return nil
+}
+
+func resourceDnsServerZoneObjectFieldAssignments(d *schema.ResourceData, object *vtm.DnsServerZone) {
+	setString(&object.Basic.Origin, d, "origin")
+	setString(&object.Basic.Zonefile, d, "zonefile")
 }
 
 func resourceDnsServerZoneDelete(d *schema.ResourceData, tm interface{}) error {
