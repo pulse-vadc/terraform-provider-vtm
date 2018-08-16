@@ -69,7 +69,7 @@ func dataSourceNetworkInterfaceStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceNetworkInterfaceStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceNetworkInterfaceStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetNetworkInterfaceStatistics(objectName)
 	if err != nil {
@@ -79,12 +79,35 @@ func dataSourceNetworkInterfaceStatisticsRead(d *schema.ResourceData, tm interfa
 		}
 		return fmt.Errorf("Failed to read vtm_network_interface '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "collisions"
 	d.Set("collisions", int(*object.Statistics.Collisions))
+
+	lastAssignedField = "rx_bytes"
 	d.Set("rx_bytes", int(*object.Statistics.RxBytes))
+
+	lastAssignedField = "rx_errors"
 	d.Set("rx_errors", int(*object.Statistics.RxErrors))
+
+	lastAssignedField = "rx_packets"
 	d.Set("rx_packets", int(*object.Statistics.RxPackets))
+
+	lastAssignedField = "tx_bytes"
 	d.Set("tx_bytes", int(*object.Statistics.TxBytes))
+
+	lastAssignedField = "tx_errors"
 	d.Set("tx_errors", int(*object.Statistics.TxErrors))
+
+	lastAssignedField = "tx_packets"
 	d.Set("tx_packets", int(*object.Statistics.TxPackets))
 	d.SetId(objectName)
 	return nil

@@ -33,7 +33,7 @@ func dataSourceEventStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceEventStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceEventStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetEventStatistics(objectName)
 	if err != nil {
@@ -43,6 +43,17 @@ func dataSourceEventStatisticsRead(d *schema.ResourceData, tm interface{}) error
 		}
 		return fmt.Errorf("Failed to read vtm_events '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "matched"
 	d.Set("matched", int(*object.Statistics.Matched))
 	d.SetId(objectName)
 	return nil

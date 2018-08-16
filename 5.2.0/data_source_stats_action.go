@@ -33,7 +33,7 @@ func dataSourceActionStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceActionStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceActionStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetActionStatistics(objectName)
 	if err != nil {
@@ -43,6 +43,17 @@ func dataSourceActionStatisticsRead(d *schema.ResourceData, tm interface{}) erro
 		}
 		return fmt.Errorf("Failed to read vtm_actions '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "processed"
 	d.Set("processed", int(*object.Statistics.Processed))
 	d.SetId(objectName)
 	return nil

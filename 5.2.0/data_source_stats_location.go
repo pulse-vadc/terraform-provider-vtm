@@ -39,7 +39,7 @@ func dataSourceLocationStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceLocationStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceLocationStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetLocationStatistics(objectName)
 	if err != nil {
@@ -49,7 +49,20 @@ func dataSourceLocationStatisticsRead(d *schema.ResourceData, tm interface{}) er
 		}
 		return fmt.Errorf("Failed to read vtm_locations '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "load"
 	d.Set("load", int(*object.Statistics.Load))
+
+	lastAssignedField = "responses"
 	d.Set("responses", int(*object.Statistics.Responses))
 	d.SetId(objectName)
 	return nil

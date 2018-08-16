@@ -58,7 +58,7 @@ func dataSourceListenIpStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceListenIpStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceListenIpStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetListenIpStatistics(objectName)
 	if err != nil {
@@ -68,10 +68,29 @@ func dataSourceListenIpStatisticsRead(d *schema.ResourceData, tm interface{}) er
 		}
 		return fmt.Errorf("Failed to read vtm_listen_ips '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "bytes_in"
 	d.Set("bytes_in", int(*object.Statistics.BytesIn))
+
+	lastAssignedField = "bytes_out"
 	d.Set("bytes_out", int(*object.Statistics.BytesOut))
+
+	lastAssignedField = "current_conn"
 	d.Set("current_conn", int(*object.Statistics.CurrentConn))
+
+	lastAssignedField = "max_conn"
 	d.Set("max_conn", int(*object.Statistics.MaxConn))
+
+	lastAssignedField = "total_requests"
 	d.Set("total_requests", int(*object.Statistics.TotalRequests))
 	d.SetId(objectName)
 	return nil

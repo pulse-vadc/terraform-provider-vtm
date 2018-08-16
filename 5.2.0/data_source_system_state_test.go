@@ -10,12 +10,14 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestDataSourceSystemState(t *testing.T) {
+   var validError = regexp.MustCompile("^(ok|warn|error)$")
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -23,7 +25,7 @@ func TestDataSourceSystemState(t *testing.T) {
 			{
 				Config: getDataSourceSystemStateConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.vtm_state.state", "data_plane_acceleration_running", "false"),
+					resource.TestMatchResourceAttr("data.vtm_state.state", "state_error_level", validError),
 				),
 			},
 		},

@@ -23,76 +23,80 @@ func resourceBgpneighbor() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceBgpneighborSchema(),
+	}
+}
 
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
+func getResourceBgpneighborSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-			// The IP address of the BGP neighbor
-			"address": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		"name": &schema.Schema{
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.NoZeroValues,
+		},
 
-			// The minimum interval between the sending of BGP routing updates
-			//  to neighbors. Note that as a result of jitter, as defined for
-			//  BGP, the interval during which no advertisements are sent will
-			//  be between 75% and 100% of this value.
-			"advertisement_interval": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 65535),
-				Default:      5,
-			},
+		// The IP address of the BGP neighbor
+		"address": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// The AS number for the BGP neighbor
-			"as_number": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(1, 4294967295),
-				Default:      65534,
-			},
+		// The minimum interval between the sending of BGP routing updates
+		//  to neighbors. Note that as a result of jitter, as defined for
+		//  BGP, the interval during which no advertisements are sent will
+		//  be between 75% and 100% of this value.
+		"advertisement_interval": &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntBetween(0, 65535),
+			Default:      5,
+		},
 
-			// The password to be used for authentication of sessions with neighbors
-			"authentication_password": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		// The AS number for the BGP neighbor
+		"as_number": &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntBetween(1, 4294967295),
+			Default:      65534,
+		},
 
-			// The period after which the BGP session with the neighbor is deemed
-			//  to have become idle - and requires re-establishment - if the
-			//  neighbor falls silent.
-			"holdtime": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 65535),
-				Default:      90,
-			},
+		// The password to be used for authentication of sessions with neighbors
+		"authentication_password": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// The interval at which messages are sent to the BGP neighbor to
-			//  keep the mutual BGP session established.
-			"keepalive": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 65535),
-				Default:      30,
-			},
+		// The period after which the BGP session with the neighbor is deemed
+		//  to have become idle - and requires re-establishment - if the
+		//  neighbor falls silent.
+		"holdtime": &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntBetween(0, 65535),
+			Default:      90,
+		},
 
-			// The traffic managers that are to use this neighbor
-			"machines": &schema.Schema{
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
+		// The interval at which messages are sent to the BGP neighbor to
+		//  keep the mutual BGP session established.
+		"keepalive": &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntBetween(0, 65535),
+			Default:      30,
+		},
+
+		// The traffic managers that are to use this neighbor
+		"machines": &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			Elem:     &schema.Schema{Type: schema.TypeString},
 		},
 	}
 }
 
-func resourceBgpneighborRead(d *schema.ResourceData, tm interface{}) error {
+func resourceBgpneighborRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	if objectName == "" {
 		objectName = d.Id()
@@ -106,14 +110,30 @@ func resourceBgpneighborRead(d *schema.ResourceData, tm interface{}) error {
 		}
 		return fmt.Errorf("Failed to read vtm_bgpneighbor '%v': %v", objectName, err.ErrorText)
 	}
-	d.Set("address", string(*object.Basic.Address))
-	d.Set("advertisement_interval", int(*object.Basic.AdvertisementInterval))
-	d.Set("as_number", int(*object.Basic.AsNumber))
-	d.Set("authentication_password", string(*object.Basic.AuthenticationPassword))
-	d.Set("holdtime", int(*object.Basic.Holdtime))
-	d.Set("keepalive", int(*object.Basic.Keepalive))
-	d.Set("machines", []string(*object.Basic.Machines))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "address"
+	d.Set("address", string(*object.Basic.Address))
+	lastAssignedField = "advertisement_interval"
+	d.Set("advertisement_interval", int(*object.Basic.AdvertisementInterval))
+	lastAssignedField = "as_number"
+	d.Set("as_number", int(*object.Basic.AsNumber))
+	lastAssignedField = "authentication_password"
+	d.Set("authentication_password", string(*object.Basic.AuthenticationPassword))
+	lastAssignedField = "holdtime"
+	d.Set("holdtime", int(*object.Basic.Holdtime))
+	lastAssignedField = "keepalive"
+	d.Set("keepalive", int(*object.Basic.Keepalive))
+	lastAssignedField = "machines"
+	d.Set("machines", []string(*object.Basic.Machines))
 	d.SetId(objectName)
 	return nil
 }
@@ -136,21 +156,12 @@ func resourceBgpneighborExists(d *schema.ResourceData, tm interface{}) (bool, er
 func resourceBgpneighborCreate(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
 	object := tm.(*vtm.VirtualTrafficManager).NewBgpneighbor(objectName)
-	setString(&object.Basic.Address, d, "address")
-	setInt(&object.Basic.AdvertisementInterval, d, "advertisement_interval")
-	setInt(&object.Basic.AsNumber, d, "as_number")
-	setString(&object.Basic.AuthenticationPassword, d, "authentication_password")
-	setInt(&object.Basic.Holdtime, d, "holdtime")
-	setInt(&object.Basic.Keepalive, d, "keepalive")
-
-	if _, ok := d.GetOk("machines"); ok {
-		setStringList(&object.Basic.Machines, d, "machines")
-	} else {
-		object.Basic.Machines = &[]string{}
-		d.Set("machines", []string(*object.Basic.Machines))
+	resourceBgpneighborObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error creating vtm_bgpneighbor '%s': %s %s", objectName, applyErr.ErrorText, info)
 	}
-
-	object.Apply()
 	d.SetId(objectName)
 	return nil
 }
@@ -161,6 +172,17 @@ func resourceBgpneighborUpdate(d *schema.ResourceData, tm interface{}) error {
 	if err != nil {
 		return fmt.Errorf("Failed to update vtm_bgpneighbor '%v': %v", objectName, err)
 	}
+	resourceBgpneighborObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error updating vtm_bgpneighbor '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
+	d.SetId(objectName)
+	return nil
+}
+
+func resourceBgpneighborObjectFieldAssignments(d *schema.ResourceData, object *vtm.Bgpneighbor) {
 	setString(&object.Basic.Address, d, "address")
 	setInt(&object.Basic.AdvertisementInterval, d, "advertisement_interval")
 	setInt(&object.Basic.AsNumber, d, "as_number")
@@ -169,15 +191,11 @@ func resourceBgpneighborUpdate(d *schema.ResourceData, tm interface{}) error {
 	setInt(&object.Basic.Keepalive, d, "keepalive")
 
 	if _, ok := d.GetOk("machines"); ok {
-		setStringList(&object.Basic.Machines, d, "machines")
+		setStringSet(&object.Basic.Machines, d, "machines")
 	} else {
 		object.Basic.Machines = &[]string{}
 		d.Set("machines", []string(*object.Basic.Machines))
 	}
-
-	object.Apply()
-	d.SetId(objectName)
-	return nil
 }
 
 func resourceBgpneighborDelete(d *schema.ResourceData, tm interface{}) error {

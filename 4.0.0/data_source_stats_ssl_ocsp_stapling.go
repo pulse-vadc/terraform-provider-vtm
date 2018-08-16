@@ -61,17 +61,40 @@ func dataSourceSslOcspStaplingStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceSslOcspStaplingStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceSslOcspStaplingStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	object, err := tm.(*vtm.VirtualTrafficManager).GetSslOcspStaplingStatistics()
 	if err != nil {
 		return fmt.Errorf("Failed to read vtm_ssl_ocsp_stapling: %v", err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "cache_count"
 	d.Set("cache_count", int(*object.Statistics.CacheCount))
+
+	lastAssignedField = "counter"
 	d.Set("counter", int(*object.Statistics.Count))
+
+	lastAssignedField = "failure_count"
 	d.Set("failure_count", int(*object.Statistics.FailureCount))
+
+	lastAssignedField = "good_count"
 	d.Set("good_count", int(*object.Statistics.GoodCount))
+
+	lastAssignedField = "revoked_count"
 	d.Set("revoked_count", int(*object.Statistics.RevokedCount))
+
+	lastAssignedField = "success_count"
 	d.Set("success_count", int(*object.Statistics.SuccessCount))
+
+	lastAssignedField = "unknown_count"
 	d.Set("unknown_count", int(*object.Statistics.UnknownCount))
 	d.SetId("ssl_ocsp_stapling")
 	return nil

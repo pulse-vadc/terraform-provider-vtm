@@ -73,7 +73,7 @@ func dataSourceConnectionRateLimitStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceConnectionRateLimitStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceConnectionRateLimitStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetConnectionRateLimitStatistics(objectName)
 	if err != nil {
@@ -83,12 +83,35 @@ func dataSourceConnectionRateLimitStatisticsRead(d *schema.ResourceData, tm inte
 		}
 		return fmt.Errorf("Failed to read vtm_connection_rate_limit '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "conns_entered"
 	d.Set("conns_entered", int(*object.Statistics.ConnsEntered))
+
+	lastAssignedField = "conns_left"
 	d.Set("conns_left", int(*object.Statistics.ConnsLeft))
+
+	lastAssignedField = "current_rate"
 	d.Set("current_rate", int(*object.Statistics.CurrentRate))
+
+	lastAssignedField = "dropped"
 	d.Set("dropped", int(*object.Statistics.Dropped))
+
+	lastAssignedField = "max_rate_per_min"
 	d.Set("max_rate_per_min", int(*object.Statistics.MaxRatePerMin))
+
+	lastAssignedField = "max_rate_per_sec"
 	d.Set("max_rate_per_sec", int(*object.Statistics.MaxRatePerSec))
+
+	lastAssignedField = "queue_length"
 	d.Set("queue_length", int(*object.Statistics.QueueLength))
 	d.SetId(objectName)
 	return nil

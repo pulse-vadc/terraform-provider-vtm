@@ -73,7 +73,7 @@ func dataSourceRuleStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceRuleStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceRuleStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetRuleStatistics(objectName)
 	if err != nil {
@@ -83,12 +83,35 @@ func dataSourceRuleStatisticsRead(d *schema.ResourceData, tm interface{}) error 
 		}
 		return fmt.Errorf("Failed to read vtm_rules '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "aborts"
 	d.Set("aborts", int(*object.Statistics.Aborts))
+
+	lastAssignedField = "discards"
 	d.Set("discards", int(*object.Statistics.Discards))
+
+	lastAssignedField = "execution_time_warnings"
 	d.Set("execution_time_warnings", int(*object.Statistics.ExecutionTimeWarnings))
+
+	lastAssignedField = "executions"
 	d.Set("executions", int(*object.Statistics.Executions))
+
+	lastAssignedField = "pool_select"
 	d.Set("pool_select", int(*object.Statistics.PoolSelect))
+
+	lastAssignedField = "responds"
 	d.Set("responds", int(*object.Statistics.Responds))
+
+	lastAssignedField = "retries"
 	d.Set("retries", int(*object.Statistics.Retries))
 	d.SetId(objectName)
 	return nil

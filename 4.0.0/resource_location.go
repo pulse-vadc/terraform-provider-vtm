@@ -23,55 +23,59 @@ func resourceLocation() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceLocationSchema(),
+	}
+}
 
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
+func getResourceLocationSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-			// The identifier of this location.
-			"identifier": &schema.Schema{
-				Type:         schema.TypeInt,
-				Required:     true,
-				ValidateFunc: validation.IntBetween(0, 2000000000),
-			},
+		"name": &schema.Schema{
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.NoZeroValues,
+		},
 
-			// The latitude of this location.
-			"latitude": &schema.Schema{
-				Type:     schema.TypeFloat,
-				Optional: true,
-				Default:  0.0,
-			},
+		// The identifier of this location.
+		"identifier": &schema.Schema{
+			Type:         schema.TypeInt,
+			Required:     true,
+			ValidateFunc: validation.IntBetween(0, 2000000000),
+		},
 
-			// The longitude of this location.
-			"longitude": &schema.Schema{
-				Type:     schema.TypeFloat,
-				Optional: true,
-				Default:  0.0,
-			},
+		// The latitude of this location.
+		"latitude": &schema.Schema{
+			Type:     schema.TypeFloat,
+			Optional: true,
+			Default:  0.0,
+		},
 
-			// A note, used to describe this location.
-			"note": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		// The longitude of this location.
+		"longitude": &schema.Schema{
+			Type:     schema.TypeFloat,
+			Optional: true,
+			Default:  0.0,
+		},
 
-			// Does this location contain traffic managers and configuration
-			//  or is it a recipient of GLB requests?
-			"type": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"config", "glb"}, false),
-				Default:      "config",
-			},
+		// A note, used to describe this location.
+		"note": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+
+		// Does this location contain traffic managers and configuration
+		//  or is it a recipient of GLB requests?
+		"type": &schema.Schema{
+			Type:         schema.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice([]string{"config", "glb"}, false),
+			Default:      "config",
 		},
 	}
 }
 
-func resourceLocationRead(d *schema.ResourceData, tm interface{}) error {
+func resourceLocationRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	if objectName == "" {
 		objectName = d.Id()
@@ -85,12 +89,26 @@ func resourceLocationRead(d *schema.ResourceData, tm interface{}) error {
 		}
 		return fmt.Errorf("Failed to read vtm_location '%v': %v", objectName, err.ErrorText)
 	}
-	d.Set("identifier", int(*object.Basic.Id))
-	d.Set("latitude", float64(*object.Basic.Latitude))
-	d.Set("longitude", float64(*object.Basic.Longitude))
-	d.Set("note", string(*object.Basic.Note))
-	d.Set("type", string(*object.Basic.Type))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "identifier"
+	d.Set("identifier", int(*object.Basic.Id))
+	lastAssignedField = "latitude"
+	d.Set("latitude", float64(*object.Basic.Latitude))
+	lastAssignedField = "longitude"
+	d.Set("longitude", float64(*object.Basic.Longitude))
+	lastAssignedField = "note"
+	d.Set("note", string(*object.Basic.Note))
+	lastAssignedField = "type"
+	d.Set("type", string(*object.Basic.Type))
 	d.SetId(objectName)
 	return nil
 }
@@ -113,13 +131,12 @@ func resourceLocationExists(d *schema.ResourceData, tm interface{}) (bool, error
 func resourceLocationCreate(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
 	object := tm.(*vtm.VirtualTrafficManager).NewLocation(objectName, d.Get("identifier").(int))
-	setInt(&object.Basic.Id, d, "identifier")
-	setFloat(&object.Basic.Latitude, d, "latitude")
-	setFloat(&object.Basic.Longitude, d, "longitude")
-	setString(&object.Basic.Note, d, "note")
-	setString(&object.Basic.Type, d, "type")
-
-	object.Apply()
+	resourceLocationObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error creating vtm_location '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
 	d.SetId(objectName)
 	return nil
 }
@@ -130,15 +147,22 @@ func resourceLocationUpdate(d *schema.ResourceData, tm interface{}) error {
 	if err != nil {
 		return fmt.Errorf("Failed to update vtm_location '%v': %v", objectName, err)
 	}
+	resourceLocationObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error updating vtm_location '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
+	d.SetId(objectName)
+	return nil
+}
+
+func resourceLocationObjectFieldAssignments(d *schema.ResourceData, object *vtm.Location) {
 	setInt(&object.Basic.Id, d, "identifier")
 	setFloat(&object.Basic.Latitude, d, "latitude")
 	setFloat(&object.Basic.Longitude, d, "longitude")
 	setString(&object.Basic.Note, d, "note")
 	setString(&object.Basic.Type, d, "type")
-
-	object.Apply()
-	d.SetId(objectName)
-	return nil
 }
 
 func resourceLocationDelete(d *schema.ResourceData, tm interface{}) error {

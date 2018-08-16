@@ -42,7 +42,7 @@ func dataSourceTrafficIpsTrafficIpStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceTrafficIpsTrafficIpStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceTrafficIpsTrafficIpStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetTrafficIpsTrafficIpStatistics(objectName)
 	if err != nil {
@@ -52,7 +52,20 @@ func dataSourceTrafficIpsTrafficIpStatisticsRead(d *schema.ResourceData, tm inte
 		}
 		return fmt.Errorf("Failed to read vtm_traffic_ip '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "state"
 	d.Set("state", string(*object.Statistics.State))
+
+	lastAssignedField = "time"
 	d.Set("time", int(*object.Statistics.Time))
 	d.SetId(objectName)
 	return nil

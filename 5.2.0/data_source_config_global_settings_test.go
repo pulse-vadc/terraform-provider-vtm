@@ -47,7 +47,7 @@ func TestDataSourceConfigGlobalSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("data.vtm_global_settings.my_global_settings", "fault_tolerance_verbose", "false"),
 					// Check that string set parameter has the correct default
 					resource.TestCheckResourceAttr("data.vtm_global_settings.my_global_settings", "fault_tolerance_frontend_check_ips.#", "1"),
-					resource.TestCheckResourceAttr("data.vtm_global_settings.my_global_settings", "fault_tolerance_frontend_check_ips.0", "%gateway%"),
+					resource.TestCheckResourceAttr("data.vtm_global_settings.my_global_settings", "fault_tolerance_frontend_check_ips.3826467038", "%gateway%"),
 				),
 			},
 		},
@@ -84,12 +84,12 @@ func rollbackDataSourceConfigGlobalSettingsConfig(s *terraform.State) error {
 	// Get vTM instance
 	tm, err := getTestVtm()
 	if err != nil {
-		fmt.Errorf("Fatal error: %+v", err)
+		return fmt.Errorf("Fatal error: %+v", err)
 	}
 	// Set changed fields back to the stored values
 	globalSettings, errGlobalSettings := tm.GetGlobalSettings()
 	if errGlobalSettings != nil {
-		fmt.Errorf("Fatal error: %+v", errGlobalSettings)
+		return fmt.Errorf("Fatal error: %+v", errGlobalSettings)
 	}
 	globalSettings.Basic.AcceptingDelay = testGlobalSettingsAcceptingDelayValue
 	globalSettings.Admin.Ssl3AllowRehandshake = testGlobalSettingsAdminSsl3AllowRehandshakeValue

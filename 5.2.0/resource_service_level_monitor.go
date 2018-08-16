@@ -23,52 +23,56 @@ func resourceServiceLevelMonitor() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceServiceLevelMonitorSchema(),
+	}
+}
 
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
+func getResourceServiceLevelMonitorSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-			// A description for the SLM class.
-			"note": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		"name": &schema.Schema{
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.NoZeroValues,
+		},
 
-			// Responses that arrive within this time limit, expressed in milliseconds,
-			//  are treated as conforming.
-			"response_time": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntAtLeast(0),
-				Default:      1000,
-			},
+		// A description for the SLM class.
+		"note": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// When the percentage of conforming responses drops below this
-			//  level, a serious error level message will be emitted.
-			"serious_threshold": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 100),
-				Default:      0,
-			},
+		// Responses that arrive within this time limit, expressed in milliseconds,
+		//  are treated as conforming.
+		"response_time": &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntAtLeast(0),
+			Default:      1000,
+		},
 
-			// When the percentage of conforming responses drops below this
-			//  level, a warning message will be emitted.
-			"warning_threshold": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 100),
-				Default:      50,
-			},
+		// When the percentage of conforming responses drops below this
+		//  level, a serious error level message will be emitted.
+		"serious_threshold": &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntBetween(0, 100),
+			Default:      0,
+		},
+
+		// When the percentage of conforming responses drops below this
+		//  level, a warning message will be emitted.
+		"warning_threshold": &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntBetween(0, 100),
+			Default:      50,
 		},
 	}
 }
 
-func resourceServiceLevelMonitorRead(d *schema.ResourceData, tm interface{}) error {
+func resourceServiceLevelMonitorRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	if objectName == "" {
 		objectName = d.Id()
@@ -82,11 +86,24 @@ func resourceServiceLevelMonitorRead(d *schema.ResourceData, tm interface{}) err
 		}
 		return fmt.Errorf("Failed to read vtm_service_level_monitor '%v': %v", objectName, err.ErrorText)
 	}
-	d.Set("note", string(*object.Basic.Note))
-	d.Set("response_time", int(*object.Basic.ResponseTime))
-	d.Set("serious_threshold", int(*object.Basic.SeriousThreshold))
-	d.Set("warning_threshold", int(*object.Basic.WarningThreshold))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "note"
+	d.Set("note", string(*object.Basic.Note))
+	lastAssignedField = "response_time"
+	d.Set("response_time", int(*object.Basic.ResponseTime))
+	lastAssignedField = "serious_threshold"
+	d.Set("serious_threshold", int(*object.Basic.SeriousThreshold))
+	lastAssignedField = "warning_threshold"
+	d.Set("warning_threshold", int(*object.Basic.WarningThreshold))
 	d.SetId(objectName)
 	return nil
 }
@@ -109,12 +126,12 @@ func resourceServiceLevelMonitorExists(d *schema.ResourceData, tm interface{}) (
 func resourceServiceLevelMonitorCreate(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
 	object := tm.(*vtm.VirtualTrafficManager).NewServiceLevelMonitor(objectName)
-	setString(&object.Basic.Note, d, "note")
-	setInt(&object.Basic.ResponseTime, d, "response_time")
-	setInt(&object.Basic.SeriousThreshold, d, "serious_threshold")
-	setInt(&object.Basic.WarningThreshold, d, "warning_threshold")
-
-	object.Apply()
+	resourceServiceLevelMonitorObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error creating vtm_service_level_monitor '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
 	d.SetId(objectName)
 	return nil
 }
@@ -125,14 +142,21 @@ func resourceServiceLevelMonitorUpdate(d *schema.ResourceData, tm interface{}) e
 	if err != nil {
 		return fmt.Errorf("Failed to update vtm_service_level_monitor '%v': %v", objectName, err)
 	}
+	resourceServiceLevelMonitorObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error updating vtm_service_level_monitor '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
+	d.SetId(objectName)
+	return nil
+}
+
+func resourceServiceLevelMonitorObjectFieldAssignments(d *schema.ResourceData, object *vtm.ServiceLevelMonitor) {
 	setString(&object.Basic.Note, d, "note")
 	setInt(&object.Basic.ResponseTime, d, "response_time")
 	setInt(&object.Basic.SeriousThreshold, d, "serious_threshold")
 	setInt(&object.Basic.WarningThreshold, d, "warning_threshold")
-
-	object.Apply()
-	d.SetId(objectName)
-	return nil
 }
 
 func resourceServiceLevelMonitorDelete(d *schema.ResourceData, tm interface{}) error {

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -58,9 +60,9 @@ func getTestVtm() (*vtm.VirtualTrafficManager, error) {
 		return nil, err
 	}
 	verifySslCert := false
-	tm, contactable, contactErr := vtm.NewVirtualTrafficManager(baseUrl, username, password, verifySslCert)
+	tm, contactable, contactErr := vtm.NewVirtualTrafficManager(baseUrl, username, password, verifySslCert, false)
 	if contactable != true {
-		return nil, fmt.Errorf("Failed to contact vTM %s: %v", baseUrl, contactErr)
+		return nil, fmt.Errorf("Failed to contact vTM %s: %v", baseUrl, contactErr.ErrorText)
 	}
     return tm, nil
 }
@@ -72,9 +74,39 @@ func testAccPreCheck(t *testing.T) {
     }
 }
 
+func regexReplace(regex, haystack, newVal string) string {
+	re := regexp.MustCompile(regex)
+	needle := re.FindStringSubmatch(haystack)[1]
+	return strings.Replace(haystack, needle, newVal, 1)
+}
+
 func TestProvider(t *testing.T) {
 	if err := Provider().(*schema.Provider).InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
+	}
+}
+
+func TestGetVtmIncorrectSettings(t *testing.T) {
+	baseUrl, username, password, err := getTestEnvVars()
+	if err != nil {
+		t.Fatalf("Failed to get env vars: %s", err)
+	}
+	tables := []struct {
+		url string
+		pass string
+		err string
+	}{
+		{baseUrl, "NotThePassword", "auth.invalid"},
+		{regexReplace("https?://([^:/]+)", baseUrl, "invalid-vtm-host.net"), password, "no such host"},
+		{regexReplace("https?://[a-zA-Z1-9-.]+:([0-9]+)/", baseUrl, "6969"), password, "connection refused"},
+		{regexReplace("https?://[a-zA-Z1-9-.]+:[0-9]+/(api)", baseUrl, "blah"), password, "resource.not_found"},
+	}
+	verifySslCert := false
+	for _, table := range tables {
+		_, _, contactErr := vtm.NewVirtualTrafficManager(table.url, username, table.pass, verifySslCert, false)
+		if ! strings.Contains(contactErr.ErrorId, table.err) {
+			t.Fatalf("Error check failed: expected '%s', got '%s'", table.err, contactErr)
+		}
 	}
 }
 

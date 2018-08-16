@@ -130,7 +130,7 @@ func dataSourcePoolStatistics() *schema.Resource {
 	}
 }
 
-func dataSourcePoolStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourcePoolStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetPoolStatistics(objectName)
 	if err != nil {
@@ -140,22 +140,65 @@ func dataSourcePoolStatisticsRead(d *schema.ResourceData, tm interface{}) error 
 		}
 		return fmt.Errorf("Failed to read vtm_pools '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "algorithm"
 	d.Set("algorithm", string(*object.Statistics.Algorithm))
+
+	lastAssignedField = "bw_limit_bytes_drop"
 	d.Set("bw_limit_bytes_drop", int(*object.Statistics.BwLimitBytesDrop))
+
+	lastAssignedField = "bw_limit_pkts_drop"
 	d.Set("bw_limit_pkts_drop", int(*object.Statistics.BwLimitPktsDrop))
+
+	lastAssignedField = "bytes_in"
 	d.Set("bytes_in", int(*object.Statistics.BytesIn))
+
+	lastAssignedField = "bytes_out"
 	d.Set("bytes_out", int(*object.Statistics.BytesOut))
+
+	lastAssignedField = "conns_queued"
 	d.Set("conns_queued", int(*object.Statistics.ConnsQueued))
+
+	lastAssignedField = "disabled"
 	d.Set("disabled", int(*object.Statistics.Disabled))
+
+	lastAssignedField = "draining"
 	d.Set("draining", int(*object.Statistics.Draining))
+
+	lastAssignedField = "max_queue_time"
 	d.Set("max_queue_time", int(*object.Statistics.MaxQueueTime))
+
+	lastAssignedField = "mean_queue_time"
 	d.Set("mean_queue_time", int(*object.Statistics.MeanQueueTime))
+
+	lastAssignedField = "min_queue_time"
 	d.Set("min_queue_time", int(*object.Statistics.MinQueueTime))
+
+	lastAssignedField = "nodes"
 	d.Set("nodes", int(*object.Statistics.Nodes))
+
+	lastAssignedField = "persistence"
 	d.Set("persistence", string(*object.Statistics.Persistence))
+
+	lastAssignedField = "queue_timeouts"
 	d.Set("queue_timeouts", int(*object.Statistics.QueueTimeouts))
+
+	lastAssignedField = "session_migrated"
 	d.Set("session_migrated", int(*object.Statistics.SessionMigrated))
+
+	lastAssignedField = "state"
 	d.Set("state", string(*object.Statistics.State))
+
+	lastAssignedField = "total_conn"
 	d.Set("total_conn", int(*object.Statistics.TotalConn))
 	d.SetId(objectName)
 	return nil

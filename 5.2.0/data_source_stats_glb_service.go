@@ -45,7 +45,7 @@ func dataSourceGlbServiceStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceGlbServiceStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceGlbServiceStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetGlbServiceStatistics(objectName)
 	if err != nil {
@@ -55,8 +55,23 @@ func dataSourceGlbServiceStatisticsRead(d *schema.ResourceData, tm interface{}) 
 		}
 		return fmt.Errorf("Failed to read vtm_glb_services '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "discarded"
 	d.Set("discarded", int(*object.Statistics.Discarded))
+
+	lastAssignedField = "responses"
 	d.Set("responses", int(*object.Statistics.Responses))
+
+	lastAssignedField = "unmodified"
 	d.Set("unmodified", int(*object.Statistics.Unmodified))
 	d.SetId(objectName)
 	return nil

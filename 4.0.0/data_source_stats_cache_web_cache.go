@@ -110,25 +110,64 @@ func dataSourceCacheWebCacheStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceCacheWebCacheStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceCacheWebCacheStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	object, err := tm.(*vtm.VirtualTrafficManager).GetCacheWebCacheStatistics()
 	if err != nil {
 		return fmt.Errorf("Failed to read vtm_web_cache: %v", err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "entries"
 	d.Set("entries", int(*object.Statistics.Entries))
+
+	lastAssignedField = "hit_rate"
 	d.Set("hit_rate", int(*object.Statistics.HitRate))
+
+	lastAssignedField = "hits"
 	d.Set("hits", int(*object.Statistics.Hits))
+
+	lastAssignedField = "lookups"
 	d.Set("lookups", int(*object.Statistics.Lookups))
+
+	lastAssignedField = "max_entries"
 	d.Set("max_entries", int(*object.Statistics.MaxEntries))
+
+	lastAssignedField = "mem_maximum"
 	d.Set("mem_maximum", int(*object.Statistics.MemMaximum))
+
+	lastAssignedField = "mem_used"
 	d.Set("mem_used", int(*object.Statistics.MemUsed))
+
+	lastAssignedField = "misses"
 	d.Set("misses", int(*object.Statistics.Misses))
+
+	lastAssignedField = "oldest"
 	d.Set("oldest", int(*object.Statistics.Oldest))
+
+	lastAssignedField = "url_store_allocated"
 	d.Set("url_store_allocated", int(*object.Statistics.UrlStoreAllocated))
+
+	lastAssignedField = "url_store_free"
 	d.Set("url_store_free", int(*object.Statistics.UrlStoreFree))
+
+	lastAssignedField = "url_store_size"
 	d.Set("url_store_size", int(*object.Statistics.UrlStoreSize))
+
+	lastAssignedField = "url_store_total_allocations"
 	d.Set("url_store_total_allocations", int(*object.Statistics.UrlStoreTotalAllocations))
+
+	lastAssignedField = "url_store_total_failures"
 	d.Set("url_store_total_failures", int(*object.Statistics.UrlStoreTotalFailures))
+
+	lastAssignedField = "url_store_total_frees"
 	d.Set("url_store_total_frees", int(*object.Statistics.UrlStoreTotalFrees))
 	d.SetId("web_cache")
 	return nil

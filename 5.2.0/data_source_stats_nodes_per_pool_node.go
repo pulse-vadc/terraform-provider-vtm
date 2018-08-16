@@ -139,7 +139,7 @@ func dataSourceNodesPerPoolNodeStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceNodesPerPoolNodeStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceNodesPerPoolNodeStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetNodesPerPoolNodeStatistics(objectName)
 	if err != nil {
@@ -149,23 +149,68 @@ func dataSourceNodesPerPoolNodeStatisticsRead(d *schema.ResourceData, tm interfa
 		}
 		return fmt.Errorf("Failed to read vtm_per_pool_node '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "bytes_from_node"
 	d.Set("bytes_from_node", int(*object.Statistics.BytesFromNode))
+
+	lastAssignedField = "bytes_to_node"
 	d.Set("bytes_to_node", int(*object.Statistics.BytesToNode))
+
+	lastAssignedField = "current_conn"
 	d.Set("current_conn", int(*object.Statistics.CurrentConn))
+
+	lastAssignedField = "current_requests"
 	d.Set("current_requests", int(*object.Statistics.CurrentRequests))
+
+	lastAssignedField = "errors"
 	d.Set("errors", int(*object.Statistics.Errors))
+
+	lastAssignedField = "failures"
 	d.Set("failures", int(*object.Statistics.Failures))
+
+	lastAssignedField = "idle_conns"
 	d.Set("idle_conns", int(*object.Statistics.IdleConns))
+
+	lastAssignedField = "l4_stateless_buckets"
 	d.Set("l4_stateless_buckets", int(*object.Statistics.L4StatelessBuckets))
+
+	lastAssignedField = "new_conn"
 	d.Set("new_conn", int(*object.Statistics.NewConn))
+
+	lastAssignedField = "node_port"
 	d.Set("node_port", int(*object.Statistics.NodePort))
+
+	lastAssignedField = "pkts_from_node"
 	d.Set("pkts_from_node", int(*object.Statistics.PktsFromNode))
+
+	lastAssignedField = "pkts_to_node"
 	d.Set("pkts_to_node", int(*object.Statistics.PktsToNode))
+
+	lastAssignedField = "pooled_conn"
 	d.Set("pooled_conn", int(*object.Statistics.PooledConn))
+
+	lastAssignedField = "response_max"
 	d.Set("response_max", int(*object.Statistics.ResponseMax))
+
+	lastAssignedField = "response_mean"
 	d.Set("response_mean", int(*object.Statistics.ResponseMean))
+
+	lastAssignedField = "response_min"
 	d.Set("response_min", int(*object.Statistics.ResponseMin))
+
+	lastAssignedField = "state"
 	d.Set("state", string(*object.Statistics.State))
+
+	lastAssignedField = "total_conn"
 	d.Set("total_conn", int(*object.Statistics.TotalConn))
 	d.SetId(objectName)
 	return nil

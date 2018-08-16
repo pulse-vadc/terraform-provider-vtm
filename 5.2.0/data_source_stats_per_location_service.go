@@ -64,7 +64,7 @@ func dataSourcePerLocationServiceStatistics() *schema.Resource {
 	}
 }
 
-func dataSourcePerLocationServiceStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourcePerLocationServiceStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	object, err := tm.(*vtm.VirtualTrafficManager).GetPerLocationServiceStatistics(objectName)
 	if err != nil {
@@ -74,11 +74,32 @@ func dataSourcePerLocationServiceStatisticsRead(d *schema.ResourceData, tm inter
 		}
 		return fmt.Errorf("Failed to read vtm_per_location_service '%v': %v", objectName, err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "draining"
 	d.Set("draining", string(*object.Statistics.Draining))
+
+	lastAssignedField = "frontend_state"
 	d.Set("frontend_state", string(*object.Statistics.FrontendState))
+
+	lastAssignedField = "load"
 	d.Set("load", int(*object.Statistics.Load))
+
+	lastAssignedField = "monitor_state"
 	d.Set("monitor_state", string(*object.Statistics.MonitorState))
+
+	lastAssignedField = "responses"
 	d.Set("responses", int(*object.Statistics.Responses))
+
+	lastAssignedField = "state"
 	d.Set("state", string(*object.Statistics.State))
 	d.SetId(objectName)
 	return nil

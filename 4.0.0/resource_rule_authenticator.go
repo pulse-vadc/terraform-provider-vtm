@@ -23,100 +23,104 @@ func resourceRuleAuthenticator() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		Schema: map[string]*schema.Schema{
+		Schema: getResourceRuleAuthenticatorSchema(),
+	}
+}
 
-			"name": &schema.Schema{
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
+func getResourceRuleAuthenticatorSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
 
-			// The hostname or IP address of the remote authenticator.
-			"host": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		"name": &schema.Schema{
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.NoZeroValues,
+		},
 
-			// A description of the authenticator.
-			"note": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		// The hostname or IP address of the remote authenticator.
+		"host": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// The port on which the remote authenticator should be contacted.
-			"port": &schema.Schema{
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 65535),
-				Default:      389,
-			},
+		// A description of the authenticator.
+		"note": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// A list of attributes to return from the search. If blank, no
-			//  attributes will be returned. If set to '*' then all user attributes
-			//  will be returned.
-			"ldap_attributes": &schema.Schema{
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
+		// The port on which the remote authenticator should be contacted.
+		"port": &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntBetween(0, 65535),
+			Default:      389,
+		},
 
-			// The distinguished name (DN) of the 'bind' user. The traffic manager
-			//  will connect to the LDAP server as this user when searching for
-			//  user records.
-			"ldap_bind_dn": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		// A list of attributes to return from the search. If blank, no
+		//  attributes will be returned. If set to '*' then all user attributes
+		//  will be returned.
+		"ldap_attributes": &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			Elem:     &schema.Schema{Type: schema.TypeString},
+		},
 
-			// The password for the bind user.
-			"ldap_bind_password": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		// The distinguished name (DN) of the 'bind' user. The traffic manager
+		//  will connect to the LDAP server as this user when searching for
+		//  user records.
+		"ldap_bind_dn": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// The filter used to locate the LDAP record for the user being
-			//  authenticated. Any occurrences of '"%u"' in the filter will be
-			//  replaced by the name of the user being authenticated.
-			"ldap_filter": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		// The password for the bind user.
+		"ldap_bind_password": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// The base distinguished name (DN) under which user records are
-			//  located on the server.
-			"ldap_filter_base_dn": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		// The filter used to locate the LDAP record for the user being
+		//  authenticated. Any occurrences of '"%u"' in the filter will be
+		//  replaced by the name of the user being authenticated.
+		"ldap_filter": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// The SSL certificate that the traffic manager should use to validate
-			//  the remote server. If no certificate is specified then no signature
-			//  validation will be performed.
-			"ldap_ssl_cert": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+		// The base distinguished name (DN) under which user records are
+		//  located on the server.
+		"ldap_filter_base_dn": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// Whether or not to enable SSL encryption to the LDAP server.
-			"ldap_ssl_enabled": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
+		// The SSL certificate that the traffic manager should use to validate
+		//  the remote server. If no certificate is specified then no signature
+		//  validation will be performed.
+		"ldap_ssl_cert": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 
-			// The type of LDAP SSL encryption to use.
-			"ldap_ssl_type": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ldaps", "starttls"}, false),
-				Default:      "ldaps",
-			},
+		// Whether or not to enable SSL encryption to the LDAP server.
+		"ldap_ssl_enabled": &schema.Schema{
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  false,
+		},
+
+		// The type of LDAP SSL encryption to use.
+		"ldap_ssl_type": &schema.Schema{
+			Type:         schema.TypeString,
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice([]string{"ldaps", "starttls"}, false),
+			Default:      "ldaps",
 		},
 	}
 }
 
-func resourceRuleAuthenticatorRead(d *schema.ResourceData, tm interface{}) error {
+func resourceRuleAuthenticatorRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	objectName := d.Get("name").(string)
 	if objectName == "" {
 		objectName = d.Id()
@@ -130,18 +134,38 @@ func resourceRuleAuthenticatorRead(d *schema.ResourceData, tm interface{}) error
 		}
 		return fmt.Errorf("Failed to read vtm_rule_authenticator '%v': %v", objectName, err.ErrorText)
 	}
-	d.Set("host", string(*object.Basic.Host))
-	d.Set("note", string(*object.Basic.Note))
-	d.Set("port", int(*object.Basic.Port))
-	d.Set("ldap_attributes", []string(*object.Ldap.Attributes))
-	d.Set("ldap_bind_dn", string(*object.Ldap.BindDn))
-	d.Set("ldap_bind_password", string(*object.Ldap.BindPassword))
-	d.Set("ldap_filter", string(*object.Ldap.Filter))
-	d.Set("ldap_filter_base_dn", string(*object.Ldap.FilterBaseDn))
-	d.Set("ldap_ssl_cert", string(*object.Ldap.SslCert))
-	d.Set("ldap_ssl_enabled", bool(*object.Ldap.SslEnabled))
-	d.Set("ldap_ssl_type", string(*object.Ldap.SslType))
 
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "host"
+	d.Set("host", string(*object.Basic.Host))
+	lastAssignedField = "note"
+	d.Set("note", string(*object.Basic.Note))
+	lastAssignedField = "port"
+	d.Set("port", int(*object.Basic.Port))
+	lastAssignedField = "ldap_attributes"
+	d.Set("ldap_attributes", []string(*object.Ldap.Attributes))
+	lastAssignedField = "ldap_bind_dn"
+	d.Set("ldap_bind_dn", string(*object.Ldap.BindDn))
+	lastAssignedField = "ldap_bind_password"
+	d.Set("ldap_bind_password", string(*object.Ldap.BindPassword))
+	lastAssignedField = "ldap_filter"
+	d.Set("ldap_filter", string(*object.Ldap.Filter))
+	lastAssignedField = "ldap_filter_base_dn"
+	d.Set("ldap_filter_base_dn", string(*object.Ldap.FilterBaseDn))
+	lastAssignedField = "ldap_ssl_cert"
+	d.Set("ldap_ssl_cert", string(*object.Ldap.SslCert))
+	lastAssignedField = "ldap_ssl_enabled"
+	d.Set("ldap_ssl_enabled", bool(*object.Ldap.SslEnabled))
+	lastAssignedField = "ldap_ssl_type"
+	d.Set("ldap_ssl_type", string(*object.Ldap.SslType))
 	d.SetId(objectName)
 	return nil
 }
@@ -164,25 +188,12 @@ func resourceRuleAuthenticatorExists(d *schema.ResourceData, tm interface{}) (bo
 func resourceRuleAuthenticatorCreate(d *schema.ResourceData, tm interface{}) error {
 	objectName := d.Get("name").(string)
 	object := tm.(*vtm.VirtualTrafficManager).NewRuleAuthenticator(objectName)
-	setString(&object.Basic.Host, d, "host")
-	setString(&object.Basic.Note, d, "note")
-	setInt(&object.Basic.Port, d, "port")
-
-	if _, ok := d.GetOk("ldap_attributes"); ok {
-		setStringList(&object.Ldap.Attributes, d, "ldap_attributes")
-	} else {
-		object.Ldap.Attributes = &[]string{}
-		d.Set("ldap_attributes", []string(*object.Ldap.Attributes))
+	resourceRuleAuthenticatorObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error creating vtm_rule_authenticator '%s': %s %s", objectName, applyErr.ErrorText, info)
 	}
-	setString(&object.Ldap.BindDn, d, "ldap_bind_dn")
-	setString(&object.Ldap.BindPassword, d, "ldap_bind_password")
-	setString(&object.Ldap.Filter, d, "ldap_filter")
-	setString(&object.Ldap.FilterBaseDn, d, "ldap_filter_base_dn")
-	setString(&object.Ldap.SslCert, d, "ldap_ssl_cert")
-	setBool(&object.Ldap.SslEnabled, d, "ldap_ssl_enabled")
-	setString(&object.Ldap.SslType, d, "ldap_ssl_type")
-
-	object.Apply()
 	d.SetId(objectName)
 	return nil
 }
@@ -193,12 +204,23 @@ func resourceRuleAuthenticatorUpdate(d *schema.ResourceData, tm interface{}) err
 	if err != nil {
 		return fmt.Errorf("Failed to update vtm_rule_authenticator '%v': %v", objectName, err)
 	}
+	resourceRuleAuthenticatorObjectFieldAssignments(d, object)
+	_, applyErr := object.Apply()
+	if applyErr != nil {
+		info := formatErrorInfo(applyErr.ErrorInfo.(map[string]interface{}))
+		return fmt.Errorf("Error updating vtm_rule_authenticator '%s': %s %s", objectName, applyErr.ErrorText, info)
+	}
+	d.SetId(objectName)
+	return nil
+}
+
+func resourceRuleAuthenticatorObjectFieldAssignments(d *schema.ResourceData, object *vtm.RuleAuthenticator) {
 	setString(&object.Basic.Host, d, "host")
 	setString(&object.Basic.Note, d, "note")
 	setInt(&object.Basic.Port, d, "port")
 
 	if _, ok := d.GetOk("ldap_attributes"); ok {
-		setStringList(&object.Ldap.Attributes, d, "ldap_attributes")
+		setStringSet(&object.Ldap.Attributes, d, "ldap_attributes")
 	} else {
 		object.Ldap.Attributes = &[]string{}
 		d.Set("ldap_attributes", []string(*object.Ldap.Attributes))
@@ -210,10 +232,6 @@ func resourceRuleAuthenticatorUpdate(d *schema.ResourceData, tm interface{}) err
 	setString(&object.Ldap.SslCert, d, "ldap_ssl_cert")
 	setBool(&object.Ldap.SslEnabled, d, "ldap_ssl_enabled")
 	setString(&object.Ldap.SslType, d, "ldap_ssl_type")
-
-	object.Apply()
-	d.SetId(objectName)
-	return nil
 }
 
 func resourceRuleAuthenticatorDelete(d *schema.ResourceData, tm interface{}) error {

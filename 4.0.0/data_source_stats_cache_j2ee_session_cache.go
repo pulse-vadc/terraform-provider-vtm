@@ -64,17 +64,40 @@ func dataSourceCacheJ2EeSessionCacheStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceCacheJ2EeSessionCacheStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceCacheJ2EeSessionCacheStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	object, err := tm.(*vtm.VirtualTrafficManager).GetCacheJ2EeSessionCacheStatistics()
 	if err != nil {
 		return fmt.Errorf("Failed to read vtm_j2ee_session_cache: %v", err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "entries"
 	d.Set("entries", int(*object.Statistics.Entries))
+
+	lastAssignedField = "entries_max"
 	d.Set("entries_max", int(*object.Statistics.EntriesMax))
+
+	lastAssignedField = "hit_rate"
 	d.Set("hit_rate", int(*object.Statistics.HitRate))
+
+	lastAssignedField = "hits"
 	d.Set("hits", int(*object.Statistics.Hits))
+
+	lastAssignedField = "lookups"
 	d.Set("lookups", int(*object.Statistics.Lookups))
+
+	lastAssignedField = "misses"
 	d.Set("misses", int(*object.Statistics.Misses))
+
+	lastAssignedField = "oldest"
 	d.Set("oldest", int(*object.Statistics.Oldest))
 	d.SetId("j2ee_session_cache")
 	return nil

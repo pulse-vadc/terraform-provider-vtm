@@ -82,20 +82,49 @@ func dataSourceTrafficIpsIpGatewayStatistics() *schema.Resource {
 	}
 }
 
-func dataSourceTrafficIpsIpGatewayStatisticsRead(d *schema.ResourceData, tm interface{}) error {
+func dataSourceTrafficIpsIpGatewayStatisticsRead(d *schema.ResourceData, tm interface{}) (readError error) {
 	object, err := tm.(*vtm.VirtualTrafficManager).GetTrafficIpsIpGatewayStatistics()
 	if err != nil {
 		return fmt.Errorf("Failed to read vtm_ip_gateway: %v", err.ErrorText)
 	}
+
+	var lastAssignedField string
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			readError = fmt.Errorf("Field '%s' missing from vTM configuration", lastAssignedField)
+		}
+	}()
+
+	lastAssignedField = "arp_message"
 	d.Set("arp_message", int(*object.Statistics.ArpMessage))
+
+	lastAssignedField = "gateway_ping_requests"
 	d.Set("gateway_ping_requests", int(*object.Statistics.GatewayPingRequests))
+
+	lastAssignedField = "gateway_ping_responses"
 	d.Set("gateway_ping_responses", int(*object.Statistics.GatewayPingResponses))
+
+	lastAssignedField = "node_ping_requests"
 	d.Set("node_ping_requests", int(*object.Statistics.NodePingRequests))
+
+	lastAssignedField = "node_ping_responses"
 	d.Set("node_ping_responses", int(*object.Statistics.NodePingResponses))
+
+	lastAssignedField = "number"
 	d.Set("number", int(*object.Statistics.Number))
+
+	lastAssignedField = "number_inet46"
 	d.Set("number_inet46", int(*object.Statistics.NumberInet46))
+
+	lastAssignedField = "number_raised"
 	d.Set("number_raised", int(*object.Statistics.NumberRaised))
+
+	lastAssignedField = "number_raised_inet46"
 	d.Set("number_raised_inet46", int(*object.Statistics.NumberRaisedInet46))
+
+	lastAssignedField = "ping_response_errors"
 	d.Set("ping_response_errors", int(*object.Statistics.PingResponseErrors))
 	d.SetId("ip_gateway")
 	return nil
