@@ -1,3 +1,27 @@
+Pulse Secure Terraform Provider 18.3 -> 21 December 2018
+================================================================================
+
+Major Features
+================================================================================
+
+- Support for vTM 18.3 Release
+  Added support for the Pulse Secure Virtual Traffic Manager 18.3 release. Use
+  the terraform-provider-vtm_6.1.0 to access the new features of 18.3 from
+  Terraform.
+
+Other Changes in vTM 18.3
+================================================================================
+
+
+- Provider
+
+ * Move the provider source into directories that do not include the patch version
+   number, so that when we increment the patch version we don't have to move all
+   the source in the repository
+   VTMTF-122
+
+
+
 Pulse Secure Terraform Provider 18.2 -> 15 August 2018
 ================================================================================
 
