@@ -6,6 +6,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"reflect"
+	"sort"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -20,6 +23,48 @@ func suppressNodesTableDiffs(k, old, new string, d *schema.ResourceData) bool {
 		return true
 	}
 	return false
+}
+
+// ignore diffs in nodes_table_json if the represented pool definitions are functionally
+// equal
+func suppressNodesTableJsonDiffs(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("auto_scaling_enabled") == true {
+		return true
+	}
+
+	oldTable := []vtm.PoolNodesTable{}
+	err := json.Unmarshal([]byte(old), &oldTable)
+	if err != nil {
+		log.Printf("[ERROR] err: %s", err)
+		return false
+	}
+
+	newTable := []vtm.PoolNodesTable{}
+	err = json.Unmarshal([]byte(new), &newTable)
+
+	if err != nil {
+		log.Printf("[ERROR] err: %s", err)
+		return false
+	}
+
+	return nodesTableDiff(oldTable, newTable)
+}
+
+// Compare two arrays of vtm.PoolNodesTable objects, ignoring the order of the objects
+// in the arrays
+func nodesTableDiff(oldTable, newTable []vtm.PoolNodesTable) bool {
+
+	oldTableSlice := oldTable[:]
+	newTableSlice := newTable[:]
+
+	sort.Slice(oldTableSlice, func(i, j int) bool {
+		return *oldTable[i].Node < *oldTable[j].Node
+	})
+	sort.Slice(newTableSlice, func(i, j int) bool {
+		return *newTable[i].Node < *newTable[j].Node
+	})
+
+	return reflect.DeepEqual(oldTableSlice, newTableSlice)
 }
 
 func resourcePool() *schema.Resource {
@@ -188,9 +233,10 @@ func getResourcePoolSchema() map[string]*schema.Schema {
 
 		// JSON representation of nodes_table
 		"nodes_table_json": &schema.Schema{
-			Type:         schema.TypeString,
-			Optional:     true,
-			ValidateFunc: validation.ValidateJsonString,
+			Type:             schema.TypeString,
+			Optional:         true,
+			DiffSuppressFunc: suppressNodesTableJsonDiffs,
+			ValidateFunc:     validation.ValidateJsonString,
 		},
 
 		// A description of the pool.
@@ -855,7 +901,7 @@ func resourcePoolRead(d *schema.ResourceData, tm interface{}) (readError error) 
 	}
 	d.Set("nodes_table", nodesTable)
 	nodesTableJson, _ := json.Marshal(nodesTable)
-	d.Set("nodes_table_json", nodesTableJson)
+	d.Set("nodes_table_json", string(nodesTableJson))
 	lastAssignedField = "note"
 	d.Set("note", string(*object.Basic.Note))
 	lastAssignedField = "passive_monitoring"
