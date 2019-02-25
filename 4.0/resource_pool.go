@@ -16,6 +16,9 @@ import (
 )
 
 func suppressNodesTableDiffs(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("dns_autoscale_enabled") == true {
+		return true
+	}
 	if d.Get("auto_scaling_enabled") == true {
 		return true
 	}
@@ -28,6 +31,9 @@ func suppressNodesTableDiffs(k, old, new string, d *schema.ResourceData) bool {
 // ignore diffs in nodes_table_json if the represented pool definitions are functionally
 // equal
 func suppressNodesTableJsonDiffs(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("dns_autoscale_enabled") == true {
+		return true
+	}
 	if d.Get("auto_scaling_enabled") == true {
 		return true
 	}
