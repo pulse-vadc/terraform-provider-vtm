@@ -894,6 +894,8 @@ func resourcePoolRead(d *schema.ResourceData, tm interface{}) (readError error) 
 		}
 		if item.SourceIp != nil {
 			itemTerraform["source_ip"] = string(*item.SourceIp)
+		} else {
+			itemTerraform["source_ip"] = ""
 		}
 		if item.State != nil {
 			itemTerraform["state"] = string(*item.State)
