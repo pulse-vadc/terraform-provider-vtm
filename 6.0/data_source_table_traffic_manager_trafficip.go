@@ -1,4 +1,4 @@
-// Copyright (C) 2018, Pulse Secure, LLC. 
+// Copyright (C) 2018-2019, Pulse Secure, LLC.
 // Licensed under the terms of the MPL 2.0. See LICENSE file for details.
 
 package main
@@ -41,7 +41,7 @@ func dataSourceTrafficManagerTrafficipTable() *schema.Resource {
 func dataSourceTrafficManagerTrafficipTableRead(d *schema.ResourceData, tm interface{}) error {
 	table := &vtm.TrafficManagerTrafficip{
 		Name:     getStringAddr(d.Get("name").(string)),
-		Networks: getStringListAddr(d.Get("networks").([]string)),
+		Networks: getStringListAddr(expandStringList(d.Get("networks").([]interface{}))),
 	}
 	jsonString, err := json.Marshal(table)
 	if err != nil {

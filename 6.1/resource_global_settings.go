@@ -1,4 +1,4 @@
-// Copyright (C) 2018, Pulse Secure, LLC. 
+// Copyright (C) 2018-2019, Pulse Secure, LLC.
 // Licensed under the terms of the MPL 2.0. See LICENSE file for details.
 
 package main
@@ -702,17 +702,6 @@ func getResourceGlobalSettingsSchema() map[string]*schema.Schema {
 			Type:     schema.TypeString,
 			Optional: true,
 			Default:  "239.100.1.1:9090",
-		},
-
-		// The multicast version to be use ("1", "2" or "3") for cluster
-		//  heartbeat messages. A value of "0" will let the operating system
-		//  choose (but note that Linux often gets this wrong). This setting
-		//  is only supported when using 2.6 versions of the Linux kernel.
-		"fault_tolerance_multicast_version": &schema.Schema{
-			Type:         schema.TypeInt,
-			Optional:     true,
-			ValidateFunc: validation.IntBetween(0, 3),
-			Default:      2,
 		},
 
 		// The unicast UDP port to use to exchange cluster heartbeat messages.
@@ -2252,8 +2241,6 @@ func resourceGlobalSettingsRead(d *schema.ResourceData, tm interface{}) (readErr
 	d.Set("fault_tolerance_monitor_timeout", int(*object.FaultTolerance.MonitorTimeout))
 	lastAssignedField = "fault_tolerance_multicast_address"
 	d.Set("fault_tolerance_multicast_address", string(*object.FaultTolerance.MulticastAddress))
-	lastAssignedField = "fault_tolerance_multicast_version"
-	d.Set("fault_tolerance_multicast_version", int(*object.FaultTolerance.MulticastVersion))
 	lastAssignedField = "fault_tolerance_unicast_port"
 	d.Set("fault_tolerance_unicast_port", int(*object.FaultTolerance.UnicastPort))
 	lastAssignedField = "fault_tolerance_use_bind_ip"
@@ -2678,7 +2665,6 @@ func resourceGlobalSettingsUpdate(d *schema.ResourceData, tm interface{}) error 
 	setInt(&object.FaultTolerance.MonitorInterval, d, "fault_tolerance_monitor_interval")
 	setInt(&object.FaultTolerance.MonitorTimeout, d, "fault_tolerance_monitor_timeout")
 	setString(&object.FaultTolerance.MulticastAddress, d, "fault_tolerance_multicast_address")
-	setInt(&object.FaultTolerance.MulticastVersion, d, "fault_tolerance_multicast_version")
 	setInt(&object.FaultTolerance.UnicastPort, d, "fault_tolerance_unicast_port")
 	setBool(&object.FaultTolerance.UseBindIp, d, "fault_tolerance_use_bind_ip")
 	setBool(&object.FaultTolerance.Verbose, d, "fault_tolerance_verbose")

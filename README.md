@@ -13,7 +13,7 @@ in Terraform format.
 To build the terraform provider simply run build.sh for one of the supported API
 versions.
 
-You will need to have golang 1.9 or higher and have GOPATH and GOROOT set
+You will need to have golang 1.12.6 or higher and have GOROOT set
 appropriately.
 
 ```shell

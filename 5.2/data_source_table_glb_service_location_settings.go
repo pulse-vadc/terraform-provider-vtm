@@ -1,4 +1,4 @@
-// Copyright (C) 2018, Pulse Secure, LLC. 
+// Copyright (C) 2018-2019, Pulse Secure, LLC.
 // Licensed under the terms of the MPL 2.0. See LICENSE file for details.
 
 package main
@@ -57,9 +57,9 @@ func dataSourceGlbServiceLocationSettingsTable() *schema.Resource {
 
 func dataSourceGlbServiceLocationSettingsTableRead(d *schema.ResourceData, tm interface{}) error {
 	table := &vtm.GlbServiceLocationSettings{
-		Ips:      getStringListAddr(d.Get("ips").([]string)),
+		Ips:      getStringListAddr(expandStringList(d.Get("ips").([]interface{}))),
 		Location: getStringAddr(d.Get("location").(string)),
-		Monitors: getStringListAddr(d.Get("monitors").([]string)),
+		Monitors: getStringListAddr(expandStringList(d.Get("monitors").([]interface{}))),
 		Weight:   getIntAddr(d.Get("weight").(int)),
 	}
 	jsonString, err := json.Marshal(table)

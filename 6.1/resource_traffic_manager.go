@@ -1,4 +1,4 @@
-// Copyright (C) 2018, Pulse Secure, LLC. 
+// Copyright (C) 2018-2019, Pulse Secure, LLC.
 // Licensed under the terms of the MPL 2.0. See LICENSE file for details.
 
 package main
@@ -134,14 +134,6 @@ func getResourceTrafficManagerSchema() map[string]*schema.Schema {
 		"cloud_platform": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-		},
-
-		// Whether user has accepted the Community Edition and will not
-		//  be prompted for uploading a license key
-		"community_edition_accepted": &schema.Schema{
-			Type:     schema.TypeBool,
-			Optional: true,
-			Default:  false,
 		},
 
 		// This is the location of the local traffic manager is in.
@@ -930,8 +922,6 @@ func resourceTrafficManagerRead(d *schema.ResourceData, tm interface{}) (readErr
 	d.Set("authenticationserverip", string(*object.Basic.Authenticationserverip))
 	lastAssignedField = "cloud_platform"
 	d.Set("cloud_platform", string(*object.Basic.CloudPlatform))
-	lastAssignedField = "community_edition_accepted"
-	d.Set("community_edition_accepted", bool(*object.Basic.CommunityEditionAccepted))
 	lastAssignedField = "location"
 	d.Set("location", string(*object.Basic.Location))
 	lastAssignedField = "nameip"
@@ -1188,7 +1178,6 @@ func resourceTrafficManagerObjectFieldAssignments(d *schema.ResourceData, object
 	setString(&object.Basic.Adminslavexmlip, d, "adminslavexmlip")
 	setString(&object.Basic.Authenticationserverip, d, "authenticationserverip")
 	setString(&object.Basic.CloudPlatform, d, "cloud_platform")
-	setBool(&object.Basic.CommunityEditionAccepted, d, "community_edition_accepted")
 	setString(&object.Basic.Location, d, "location")
 	setString(&object.Basic.Nameip, d, "nameip")
 	setInt(&object.Basic.NumAptimizerThreads, d, "num_aptimizer_threads")

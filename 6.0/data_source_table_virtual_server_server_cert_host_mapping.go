@@ -1,4 +1,4 @@
-// Copyright (C) 2018, Pulse Secure, LLC. 
+// Copyright (C) 2018-2019, Pulse Secure, LLC.
 // Licensed under the terms of the MPL 2.0. See LICENSE file for details.
 
 package main
@@ -47,7 +47,7 @@ func dataSourceVirtualServerServerCertHostMappingTable() *schema.Resource {
 
 func dataSourceVirtualServerServerCertHostMappingTableRead(d *schema.ResourceData, tm interface{}) error {
 	table := &vtm.VirtualServerServerCertHostMapping{
-		AltCertificates: getStringListAddr(d.Get("alt_certificates").([]string)),
+		AltCertificates: getStringListAddr(expandStringList(d.Get("alt_certificates").([]interface{}))),
 		Certificate:     getStringAddr(d.Get("certificate").(string)),
 		Host:            getStringAddr(d.Get("host").(string)),
 	}

@@ -1,3 +1,47 @@
+Pulse Secure Terraform Provider 19.1 -> 24 July 2019
+================================================================================
+
+The Pulse Secure Terraform Provider 19.1 is a new major release containing
+a number of performance and functionality enhancements. Customers are
+recommended to upgrade to this version to take advantage of the changes.
+
+Major Features
+================================================================================
+
+- Support for vTM 19.1 and 19.2
+
+  Released providers for the vTM 19.1 and 19.2 releases and moved to terraform
+  0.12 for all versions of the terraform provider.
+
+  Removed the vTM 18.3 / 4.0
+  API provider as the 4.0 API was obsoleted in vTM 19.2
+
+Other changes in 19.1
+================================================================================
+
+
+- Build & Test system
+
+ * Moved supported version of golang to 1.12.5 in order to make use of go mod and
+   Terraform 0.12
+   VTMTF-131
+
+
+- REST Bindings
+
+ * Fixed an issue where the Terraform Provider was keeping a large number of HTTP
+   connections open. The provider should now reuse HTTP connections.
+   VTMTF-134
+
+
+- Provider
+
+ * Fixed an issue where, when using a table data source to generate JSON, a cell
+   containing a list caused a crash whilst attempting to execute a plan.
+   VTMTF-126
+
+
+
 Pulse Secure Terraform Provider 18.3 -> 21 December 2018
 ================================================================================
 
