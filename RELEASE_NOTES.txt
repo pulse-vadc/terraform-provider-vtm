@@ -1,3 +1,23 @@
+Pulse Secure Terraform Provider 19.1.1 -> 03 September 2019
+================================================================================
+
+The Pulse Secure Terraform Provider 19.1.1 is a minor release. 
+
+Customers are recommended to upgrade to this version to take advantage of the 
+changes.
+
+Changes in 19.1.1
+================================================================================
+
+
+- Build & Test system
+
+ * Fixed an issue where the vendored sources were out of date with the upstream
+   version of go-vtm
+   VTMTF-136
+
+
+
 Pulse Secure Terraform Provider 19.1 -> 24 July 2019
 ================================================================================
 

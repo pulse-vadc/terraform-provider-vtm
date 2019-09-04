@@ -206,7 +206,7 @@ github.com/posener/complete
 github.com/posener/complete/cmd/install
 github.com/posener/complete/cmd
 github.com/posener/complete/match
-# github.com/pulse-vadc/go-vtm v0.0.0-20181221114146-7bc00957c96c => ../go-vtm
+# github.com/pulse-vadc/go-vtm v0.0.0-20190730120709-e8c8deea3bb4 => ../go-vtm
 github.com/pulse-vadc/go-vtm/5.2
 github.com/pulse-vadc/go-vtm/6.0
 github.com/pulse-vadc/go-vtm/6.1

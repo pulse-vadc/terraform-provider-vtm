@@ -4,9 +4,11 @@
 package vtm
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -52,11 +54,11 @@ type vtmConnector struct {
 
 func (c vtmConnector) getChildConnector(path string) *vtmConnector {
 	newUrl := c.url + path
-	conn := newConnector(newUrl, c.username, c.password, c.verifySslCert, c.verbose)
+	conn := newConnector(newUrl, c.username, c.password, c.verifySslCert, c.verbose, c.client)
 	return conn
 }
 
-func (c vtmConnector) get() (io.ReadCloser, bool) {
+func (c vtmConnector) get() (io.Reader, bool) {
 	request, err := http.NewRequest("GET", c.url, nil)
 	if c.verbose {
 		reqDump, _ := httputil.DumpRequestOut(request, false)
@@ -67,17 +69,23 @@ func (c vtmConnector) get() (io.ReadCloser, bool) {
 	if err != nil {
 		panic(err)
 	}
+	defer response.Body.Close()
 	if c.verbose {
 		resDump, _ := httputil.DumpResponse(response, true)
 		log.Printf("REST GET RESPONSE: %q\n", resDump)
 	}
-	if response.StatusCode == 200 {
-		return response.Body, true
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		panic(err)
 	}
-	return response.Body, false
+	bodyReader := bytes.NewReader(responseBody)
+	if response.StatusCode == 200 {
+		return bodyReader, true
+	}
+	return bodyReader, false
 }
 
-func (c vtmConnector) put(body string, isTextObject bool) (io.ReadCloser, bool) {
+func (c vtmConnector) put(body string, isTextObject bool) (io.Reader, bool) {
 	var contentType string
 	if isTextObject == true {
 		contentType = "application/octet-stream"
@@ -95,17 +103,23 @@ func (c vtmConnector) put(body string, isTextObject bool) (io.ReadCloser, bool) 
 	if err != nil {
 		panic(err)
 	}
+	defer response.Body.Close()
 	if c.verbose {
 		resDump, _ := httputil.DumpResponse(response, true)
 		log.Printf("REST PUT RESPONSE: %q\n", resDump)
 	}
-	if response.StatusCode >= 200 && response.StatusCode < 300 {
-		return response.Body, true
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		panic(err)
 	}
-	return response.Body, false
+	bodyReader := bytes.NewReader(responseBody)
+	if response.StatusCode >= 200 && response.StatusCode < 300 {
+		return bodyReader, true
+	}
+	return bodyReader, false
 }
 
-func (c vtmConnector) delete() (io.ReadCloser, bool) {
+func (c vtmConnector) delete() (io.Reader, bool) {
 	request, err := http.NewRequest("DELETE", c.url, nil)
 	if c.verbose {
 		reqDump, _ := httputil.DumpRequestOut(request, false)
@@ -116,19 +130,28 @@ func (c vtmConnector) delete() (io.ReadCloser, bool) {
 	if err != nil {
 		panic(err)
 	}
+	defer response.Body.Close()
 	if c.verbose {
 		resDump, _ := httputil.DumpResponse(response, false)
 		log.Printf("REST DELETE RESPONSE: %s\n", resDump)
 	}
-	if response.StatusCode == 204 {
-		return response.Body, true
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		panic(err)
 	}
-	return response.Body, false
+	bodyReader := bytes.NewReader(responseBody)
+	if response.StatusCode == 204 {
+		return bodyReader, true
+	}
+	return bodyReader, false
 }
 
-func newConnector(url, username, password string, verifySslCert, verbose bool) *vtmConnector {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: !verifySslCert},
+func newConnector(url, username, password string, verifySslCert, verbose bool, client *http.Client) *vtmConnector {
+	if client == nil {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: !verifySslCert},
+		}
+		client = &http.Client{Transport: tr, Timeout: 3 * time.Second}
 	}
 	conn := &vtmConnector{
 		url:           url,
@@ -136,7 +159,7 @@ func newConnector(url, username, password string, verifySslCert, verbose bool) *
 		password:      password,
 		verifySslCert: verifySslCert,
 		verbose:       verbose,
-		client:        &http.Client{Transport: tr, Timeout: 3 * time.Second},
+		client:        client,
 	}
 	return conn
 }
@@ -210,7 +233,7 @@ Returns:
 */
 func NewVirtualTrafficManager(url, username, password string, verifySslCert, verbose bool) (*VirtualTrafficManager, bool, *vtmErrorResponse) {
 	vtm := new(VirtualTrafficManager)
-	conn := newConnector(url, username, password, verifySslCert, verbose)
+	conn := newConnector(url, username, password, verifySslCert, verbose, nil)
 	vtm.connector = conn
 	contactable, contactErr := vtm.testConnectivity()
 	return vtm, contactable, contactErr
