@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2019, Pulse Secure, LLC.
+// Copyright (C) 2018-2022, Pulse Secure, LLC.
 // Licensed under the terms of the MPL 2.0. See LICENSE file for details.
 
 package main
@@ -187,7 +187,6 @@ func getResourceGlobalSettingsSchema() map[string]*schema.Schema {
 		"admin_ssl3_ciphers": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "SSL_RSA_WITH_AES_128_GCM_SHA256,SSL_RSA_WITH_AES_128_CBC_SHA256,SSL_RSA_WITH_AES_128_CBC_SHA,SSL_RSA_WITH_AES_256_GCM_SHA384,SSL_RSA_WITH_AES_256_CBC_SHA256,SSL_RSA_WITH_AES_256_CBC_SHA,SSL_RSA_WITH_3DES_EDE_CBC_SHA,SSL_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,SSL_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,SSL_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,SSL_DHE_DSS_WITH_AES_128_CBC_SHA,SSL_DHE_DSS_WITH_AES_256_CBC_SHA,SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA",
 		},
 
 		// The length in bits of the Diffie-Hellman key for ciphers that

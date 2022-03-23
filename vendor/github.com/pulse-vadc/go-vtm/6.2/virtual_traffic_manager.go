@@ -1,4 +1,7 @@
-// Copyright (C) 2018-2019, Pulse Secure, LLC.
+// Copyright (C) 2018-2022, Pulse Secure, LLC.
+// Licensed under the terms of the MPL 2.0. See LICENSE file for details.
+
+// Copyright (C) 2018-2022, Pulse Secure, LLC.
 // Licensed under the terms of the MPL 2.0. See LICENSE file for details.
 
 package vtm
@@ -7,6 +10,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -175,10 +179,17 @@ func (tm VirtualTrafficManager) testConnectivityOnce() (ok bool, err *vtmErrorRe
 	ok = false
 	defer func() {
 		if r := recover(); r != nil {
-			rue := r.(*url.Error)
-			err = &vtmErrorResponse{
-				ErrorId:   rue.Err.Error(),
-				ErrorText: rue.Err.Error(),
+			switch e := r.(type) {
+			case *url.Error:
+				err = &vtmErrorResponse{
+					ErrorId:   e.Err.Error(),
+					ErrorText: e.Err.Error(),
+				}
+			default:
+				err = &vtmErrorResponse{
+					ErrorId:   fmt.Sprintf("%s", e),
+					ErrorText: fmt.Sprintf("%s", e),
+				}
 			}
 		}
 	}()

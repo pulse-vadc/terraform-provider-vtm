@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2019, Pulse Secure, LLC.
+// Copyright (C) 2018-2022, Pulse Secure, LLC.
 // Licensed under the terms of the MPL 2.0. See LICENSE file for details.
 
 // Data Source Object Globals
@@ -345,6 +345,13 @@ func dataSourceGlobalsStatistics() *schema.Resource {
 				Optional: true,
 			},
 
+			// Number of times the SSL session id was not found in the disk
+			//  cache (obsolete as a disk-based cache is no longer supported).
+			"ssl_session_id_disk_cache_miss": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+
 			// Number of times the SSL session id was found in the cache and
 			//  reused.
 			"ssl_session_id_mem_cache_hit": &schema.Schema{
@@ -676,6 +683,9 @@ func dataSourceGlobalsStatisticsRead(d *schema.ResourceData, tm interface{}) (re
 
 	lastAssignedField = "ssl_handshake_tlsv12"
 	d.Set("ssl_handshake_tlsv12", int(*object.Statistics.SslHandshakeTlsv12))
+
+	lastAssignedField = "ssl_session_id_disk_cache_miss"
+	d.Set("ssl_session_id_disk_cache_miss", int(*object.Statistics.SslSessionIdDiskCacheMiss))
 
 	lastAssignedField = "ssl_session_id_mem_cache_hit"
 	d.Set("ssl_session_id_mem_cache_hit", int(*object.Statistics.SslSessionIdMemCacheHit))

@@ -21,13 +21,13 @@ binBase="../bin"
 for platform in $platforms; do
     binDir="${binBase}/${platform}-${GOARCH}"
     mkdir -p ${binDir}
-    echo "Building v6.0.2 for ${platform}.."
+    echo "Building v6.0.3 for ${platform}.."
     if [[ "${platform}" == "windows" ]]; then
         ext=".exe"
     else
         ext=""
     fi
-    TARGET=${binDir}/terraform-provider-vtm_v6.0.2${ext}
+    TARGET=${binDir}/terraform-provider-vtm_v6.0.3${ext}
     CGO_ENABLED=0 GOOS=$platform go build -mod=vendor -o ${TARGET} \
         -a -ldflags '-extldflags "-static -s"' .
 done

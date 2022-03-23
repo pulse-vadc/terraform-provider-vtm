@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2019, Pulse Secure, LLC.
+// Copyright (C) 2018-2022, Pulse Secure, LLC.
 // Licensed under the terms of the MPL 2.0. See LICENSE file for details.
 
 // Data Source Object ServiceProtection
@@ -33,50 +33,49 @@ func dataSourceServiceProtectionStatistics() *schema.Resource {
 			},
 
 			// Connections refused by this service protection class because
-			//  the  request contained disallowed binary content.
+			//  the request contained disallowed binary content.
 			"refusal_binary": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
 
 			// Connections refused by this service protection class because
-			//  the  top 10 source IP addresses issued too many concurrent connections.
+			//  the top 10 source IP addresses issued too many concurrent connections.
 			"refusal_conc10_ip": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
 
 			// Connections refused by this service protection class because
-			//  the  source IP address issued too many concurrent connections.
+			//  the source IP address issued too many concurrent connections.
 			"refusal_conc1_ip": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
 
 			// Connections refused by this service protection class because
-			//  the  source IP address issued too many connections within 60
-			//  seconds.
+			//  the source IP address issued too many connections within 60 seconds.
 			"refusal_conn_rate": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
 
 			// Connections refused by this service protection class because
-			//  the  source IP address was banned.
+			//  the source IP address was banned.
 			"refusal_ip": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
 
 			// Connections refused by this service protection class because
-			//  the  HTTP request was not RFC 2396 compliant.
+			//  the HTTP request was not RFC 2396 compliant.
 			"refusal_rfc2396": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
 
 			// Connections refused by this service protection class because
-			//  the  request was larger than the defined limits allowed.
+			//  the request was larger than the defined limits allowed.
 			"refusal_size": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
