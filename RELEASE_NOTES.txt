@@ -1,3 +1,48 @@
+Pulse Secure Terraform Provider 22.1 -> 11 April 2022
+================================================================================
+
+The Pulse Secure Terraform Provider 22.1 is a new major release containing
+a number of performance and functionality enhancements. Customers are
+recommended to upgrade to this version to take advantage of the changes.
+
+Major Features
+================================================================================
+
+- Support for vTM 19.3, 20.1, 20.2, 20.3, 21.1, 21.2, 21.3, 21.4 and 22.1
+
+  Released providers for the vTM 19.3, 20.1, 20.2, 20.3, 21.1, 21.2, 21.3,
+  21.4 and 22.1 releases and moved to terraform 0.12 for all versions of
+  the terraform provider.
+
+  Removed the vTM 18.3 / 5.2
+  API provider as the 5.2 API was obsoleted in vTM 19.3
+
+Other changes in 22.1
+================================================================================
+
+
+- Build & Test system
+
+ * Moved supported version of golang to 1.17.6, Terraform 0.12 and
+   Terraform SDK v0.12.20
+   Fixed default values of schema objects w.r.t API version.
+   VTMTF-155
+
+
+- REST Bindings
+
+ * Fixed an issue where, the Terraform Provider crashes due to an unsafe cast
+   to url.Error.
+   VTMTF-117
+
+
+- Provider
+
+ * Fixed an issue where, Terraform Provider crashes due to failed connectivity
+   test while vTM is being initialised. Terraform Provider will exit on error.
+   VTMTF-118
+
+
 Pulse Secure Terraform Provider 19.1.1 -> 03 September 2019
 ================================================================================
 
