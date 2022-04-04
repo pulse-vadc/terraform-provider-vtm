@@ -269,9 +269,8 @@ github.com/posener/complete
 github.com/posener/complete/cmd
 github.com/posener/complete/cmd/install
 github.com/posener/complete/match
-# github.com/pulse-vadc/go-vtm v0.0.0-20220324115016-30ec49ef6366 => ../go-vtm
+# github.com/pulse-vadc/go-vtm v0.0.0-20220404094347-472d5cfb18b9 => ../go-vtm
 ## explicit; go 1.17
-github.com/pulse-vadc/go-vtm/5.2
 github.com/pulse-vadc/go-vtm/6.0
 github.com/pulse-vadc/go-vtm/6.1
 github.com/pulse-vadc/go-vtm/6.2

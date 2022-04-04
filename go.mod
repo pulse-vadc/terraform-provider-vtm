@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/hashicorp/terraform v0.12.20
-	github.com/pulse-vadc/go-vtm v0.0.0-20220324115016-30ec49ef6366
+	github.com/pulse-vadc/go-vtm v0.0.0-20220404094347-472d5cfb18b9
 )
 
 require (
