@@ -14,8 +14,8 @@ Major Features
   21.4 and 22.1 releases and moved to terraform 0.12 for all versions of
   the terraform provider.
 
-  Removed the vTM 18.3 / 5.2
-  API provider as the 5.2 API was obsoleted in vTM 19.3
+  Removed the vTM 20.1 / 5.2
+  API provider as the 5.2 API was obsoleted in vTM 20.1
 
 Other changes in 22.1
 ================================================================================
