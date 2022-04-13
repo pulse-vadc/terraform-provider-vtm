@@ -42,6 +42,15 @@ Other changes in 22.1
    test while vTM is being initialised. Terraform Provider will exit on error.
    VTMTF-118
 
+Known Issues
+================================================================================
+
+ * Terraform provider doesn't unset gzip_include_mime when it is removed from tf file
+   configuration.
+   VTMTF-18
+
+ * Terraform provider crashes if certificate name has spaces.
+   VTMTF-152
 
 Pulse Secure Terraform Provider 19.1.1 -> 03 September 2019
 ================================================================================
