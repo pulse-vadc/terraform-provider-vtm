@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2019, Pulse Secure, LLC.
+// Copyright (C) 2018-2022, Pulse Secure, LLC.
 // Licensed under the terms of the MPL 2.0. See LICENSE file for details.
 
 package main
@@ -416,6 +416,7 @@ func getResourceTrafficManagerSchema() map[string]*schema.Schema {
 		"appliance_ipmi_lan_gateway": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
+                        Default:  "0.0.0.0",
 		},
 
 		// The addressing mode the IPMI LAN channel operates.

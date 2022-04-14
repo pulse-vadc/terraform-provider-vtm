@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2019, Pulse Secure, LLC.
+// Copyright (C) 2018-2022, Pulse Secure, LLC.
 // Licensed under the terms of the MPL 2.0. See LICENSE file for details.
 
 // Go library for Pulse Virtual Traffic Manager REST version 6.0.
@@ -30,11 +30,29 @@ type VirtualServerStatistics struct {
 		Discard                   *int    `json:"discard"`
 		Gzip                      *int    `json:"gzip"`
 		GzipBytesSaved            *int    `json:"gzip_bytes_saved"`
+		Http1XxResponses          *int    `json:"http1xx_responses"`
+		Http2XxResponses          *int    `json:"http2xx_responses"`
+		Http3XxResponses          *int    `json:"http3xx_responses"`
+		Http4XxResponses          *int    `json:"http4xx_responses"`
+		Http5XxResponses          *int    `json:"http5xx_responses"`
+		HttpCache2XxResponses     *int    `json:"http_cache2xx_responses"`
+		HttpCache3XxResponses     *int    `json:"http_cache3xx_responses"`
+		HttpCache4XxResponses     *int    `json:"http_cache4xx_responses"`
+		HttpCache5XxResponses     *int    `json:"http_cache5xx_responses"`
 		HttpCacheHitRate          *int    `json:"http_cache_hit_rate"`
 		HttpCacheHits             *int    `json:"http_cache_hits"`
 		HttpCacheLookups          *int    `json:"http_cache_lookups"`
+		HttpGenerated2XxResponses *int    `json:"http_generated2xx_responses"`
+		HttpGenerated3XxResponses *int    `json:"http_generated3xx_responses"`
+		HttpGenerated4XxResponses *int    `json:"http_generated4xx_responses"`
+		HttpGenerated5XxResponses *int    `json:"http_generated5xx_responses"`
 		HttpRewriteCookie         *int    `json:"http_rewrite_cookie"`
 		HttpRewriteLocation       *int    `json:"http_rewrite_location"`
+		HttpServer1XxResponses    *int    `json:"http_server1xx_responses"`
+		HttpServer2XxResponses    *int    `json:"http_server2xx_responses"`
+		HttpServer3XxResponses    *int    `json:"http_server3xx_responses"`
+		HttpServer4XxResponses    *int    `json:"http_server4xx_responses"`
+		HttpServer5XxResponses    *int    `json:"http_server5xx_responses"`
 		KeepaliveTimedOut         *int    `json:"keepalive_timed_out"`
 		MaxConn                   *int    `json:"max_conn"`
 		MaxDurationTimedOut       *int    `json:"max_duration_timed_out"`

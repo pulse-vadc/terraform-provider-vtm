@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2019, Pulse Secure, LLC.
+// Copyright (C) 2018-2022, Pulse Secure, LLC.
 // Licensed under the terms of the MPL 2.0. See LICENSE file for details.
 
 package main
@@ -37,6 +37,12 @@ func Provider() terraform.ResourceProvider {
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("VTM_VERIFY_SSL_CERT", true),
 				Description: "Check that vTM REST interface SSL certificate is trusted",
+			},
+			"test_connectivity": &schema.Schema{
+				Type:        schema.TypeBool,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("VTM_TEST_CONNECTIVITY", true),
+				Description: "Check that the target vTM is reachable",
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -239,9 +245,10 @@ func configureProvider(d *schema.ResourceData) (interface{}, error) {
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
 	verifySslCert := d.Get("verify_ssl_cert").(bool)
+	testConnectivity := d.Get("test_connectivity").(bool)
 
 	tm, contactable, contactErr := vtm.NewVirtualTrafficManager(baseUrl, username, password, verifySslCert, true)
-	if contactable != true {
+	if testConnectivity && !contactable {
 		return nil, fmt.Errorf("Failed to connect to Virtual Traffic Manager at '%v': %v", baseUrl, contactErr.ErrorText)
 	}
 	return tm, nil

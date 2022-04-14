@@ -13,7 +13,7 @@ in Terraform format.
 To build the terraform provider simply run build.sh for one of the supported API
 versions.
 
-You will need to have golang 1.12.6 or higher and have GOROOT set
+You will need to have golang 1.17.6 or higher and have GOROOT set
 appropriately.
 
 ```shell
@@ -24,7 +24,7 @@ See the included PDF manual for more details on using the provider.
 
 ## Copyright and License Acknowledgement
 
-Copyright &copy; 2018, Pulse Secure LLC. Licensed under the terms of the
+Copyright &copy; 2022, Pulse Secure LLC. Licensed under the terms of the
 MPL 2.0. See the LICENSE file for details.
 
 The Virtual Traffic Manager Terraform provider depends on a number of
